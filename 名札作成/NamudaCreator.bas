@@ -1,13 +1,14 @@
 Attribute VB_Name = "NamudaCreator"
 ' Nagasaki Kita Tokushukai Hospital - Employee Badge Creator
 ' All Japanese text uses ChrW() so the .bas file imports correctly.
+' Badge size: 55mm wide x 90mm tall, Meiryo font, ID+barcode upper-right
 Option Explicit
 
 '==============================================================
 ' Constants  (module-level declarations FIRST)
 '==============================================================
-Private Const BADGE_ROWS     As Integer = 14
-Private Const BADGE_COLS     As Integer = 11
+Private Const BADGE_ROWS     As Integer = 19
+Private Const BADGE_COLS     As Integer = 10
 Private Const BADGES_PER_ROW As Integer = 2
 Private Const COL_GAP        As Integer = 1
 Private Const ROW_GAP        As Integer = 1
@@ -28,7 +29,7 @@ Private Const F_KANA As Integer = 2
 Private Const F_DEPT As Integer = 3
 Private Const F_JOB  As Integer = 4
 Private Const F_POS  As Integer = 5
-Private Const F_COLS As Integer = 6   ' number of fields per employee
+Private Const F_COLS As Integer = 6
 
 '==============================================================
 ' PUBLIC SUBS  (assign to buttons on the sheet)
@@ -55,7 +56,6 @@ Public Sub CreateBadgesSelected()
         MsgBox "Select rows in the " & mn & " sheet first.", vbExclamation: Exit Sub
     End If
 
-    ' Collect unique selected rows
     Dim selRows() As Long
     Dim cnt As Integer: cnt = 0
     Dim cel As Range
@@ -201,13 +201,29 @@ Private Sub GenerateBadges(empArr() As String, cnt As Integer)
 End Sub
 
 ' Set row heights and column widths for all badge positions
+' Badge: 55mm wide x 90mm tall
 Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
     Dim rowCount As Integer: rowCount = ((cnt - 1) \ BADGES_PER_ROW) + 1
-    Dim rh(13) As Single
-    rh(0)  = 2:  rh(1)  = 13: rh(2)  = 13: rh(3)  = 11
-    rh(4)  = 15: rh(5)  = 15: rh(6)  = 15: rh(7)  = 15
-    rh(8)  = 12: rh(9)  = 5
-    rh(10) = 11: rh(11) = 11: rh(12) = 11: rh(13) = 2
+
+    ' Row heights (pt) -- total ~253pt = ~89mm
+    ' Row 0 : top pad         3pt
+    ' Row 1 : ID number       14pt
+    ' Row 2-4 : barcode       14pt x3
+    ' Row 5-6 : dept name     16pt x2
+    ' Row 7 : job/pos         13pt
+    ' Row 8 : spacer          10pt
+    ' Row 9-12 : kana (large) 18pt x4
+    ' Row 13 : kanji name     13pt
+    ' Row 14 : spacer         10pt
+    ' Row 15-17 : footer      13pt x3
+    ' Row 18 : bottom pad     3pt
+    Dim rh(18) As Single
+    rh(0)=3:   rh(1)=14:  rh(2)=14:  rh(3)=14:  rh(4)=14
+    rh(5)=16:  rh(6)=16:  rh(7)=13:  rh(8)=10
+    rh(9)=18:  rh(10)=18: rh(11)=18: rh(12)=18
+    rh(13)=13: rh(14)=10
+    rh(15)=13: rh(16)=13: rh(17)=13: rh(18)=3
+
     Dim rb As Integer, ri As Integer, br As Long
     For rb = 0 To rowCount - 1
         br = rb * (BADGE_ROWS + ROW_GAP) + 1
@@ -216,10 +232,18 @@ Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
         Next ri
         If rb < rowCount - 1 Then ws.Rows(br + BADGE_ROWS).RowHeight = 6
     Next rb
-    Dim cw(10) As Single
-    cw(0) = 1:   cw(1) = 3.5: cw(2) = 3.5: cw(3) = 3.5
-    cw(4) = 3.5: cw(5) = 3.5: cw(6) = 3
-    cw(7) = 0.5: cw(8) = 3:   cw(9) = 3:   cw(10) = 1.5
+
+    ' Column widths -- total ~19.3 units = ~55mm (at ~2.85mm/unit)
+    ' col 0 : left pad   0.5
+    ' col 1-6 : content  2.5 x6
+    ' col 7 : separator  0.3
+    ' col 8 : barcode    2.0
+    ' col 9 : right pad  1.5
+    Dim cw(9) As Single
+    cw(0)=0.5: cw(1)=2.5: cw(2)=2.5: cw(3)=2.5
+    cw(4)=2.5: cw(5)=2.5: cw(6)=2.5
+    cw(7)=0.3: cw(8)=2.0: cw(9)=1.5
+
     Dim ci As Integer
     For ci = 0 To BADGE_COLS - 1
         ws.Columns(1 + ci).ColumnWidth = cw(ci)
@@ -239,7 +263,7 @@ Private Sub DrawOneBadge(ws As Worksheet, badgeIdx As Integer, _
     Call DrawBadgeContent(ws, sRow, sCol, empID, empName, empKana, dept, jobType, pos)
 End Sub
 
-' Draw badge content into the cell range starting at (sRow, sCol)
+' Draw badge content into cell range starting at (sRow, sCol)
 Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
                               empID As String, empName As String, empKana As String, _
                               dept  As String, jobType As String, pos    As String)
@@ -251,56 +275,73 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
 
     ' Outer border
     Dim fc As Long: fc = RGB(80, 80, 160)
-    fr.Borders(xlEdgeLeft).LineStyle   = xlContinuous: fr.Borders(xlEdgeLeft).Weight   = xlMedium: fr.Borders(xlEdgeLeft).Color   = fc
-    fr.Borders(xlEdgeRight).LineStyle  = xlContinuous: fr.Borders(xlEdgeRight).Weight  = xlMedium: fr.Borders(xlEdgeRight).Color  = fc
-    fr.Borders(xlEdgeTop).LineStyle    = xlContinuous: fr.Borders(xlEdgeTop).Weight    = xlMedium: fr.Borders(xlEdgeTop).Color    = fc
-    fr.Borders(xlEdgeBottom).LineStyle = xlContinuous: fr.Borders(xlEdgeBottom).Weight = xlMedium: fr.Borders(xlEdgeBottom).Color = fc
+    With fr.Borders(xlEdgeLeft):   .LineStyle = xlContinuous: .Weight = xlMedium: .Color = fc: End With
+    With fr.Borders(xlEdgeRight):  .LineStyle = xlContinuous: .Weight = xlMedium: .Color = fc: End With
+    With fr.Borders(xlEdgeTop):    .LineStyle = xlContinuous: .Weight = xlMedium: .Color = fc: End With
+    With fr.Borders(xlEdgeBottom): .LineStyle = xlContinuous: .Weight = xlMedium: .Color = fc: End With
 
-    ' Left area: dept (rows +1,+2), job/pos (row +3), kana (rows +4..+7), name (row +8)
-    Call MC(ws, sRow+1, sCol, 2, 7, dept,    14, True,  FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlLeft,   xlCenter)
+    Dim fn As String: fn = FN_MEIRYO()
 
+    ' -------------------------------------------------------
+    ' Upper-right: ID (row+1) + barcode (rows+2 to +4)
+    ' Right area = cols +6 to +9  (4 cols)
+    ' -------------------------------------------------------
+    Dim rc As Long: rc = sCol + 6
+
+    ' ID number
+    Dim idR As Range
+    Set idR = ws.Range(ws.Cells(sRow + 1, rc), ws.Cells(sRow + 1, sCol + BADGE_COLS - 1))
+    idR.Merge: idR.Value = empID
+    idR.Font.Size = 7: idR.Font.Name = "Arial": idR.Font.Bold = True
+    idR.Font.Color = RGB(42, 107, 183): idR.Interior.Color = RGB(255, 255, 255)
+    idR.HorizontalAlignment = xlRight: idR.VerticalAlignment = xlCenter
+
+    ' Barcode (simulated with Courier New)
+    Dim bcR As Range
+    Set bcR = ws.Range(ws.Cells(sRow + 2, rc), ws.Cells(sRow + 4, sCol + BADGE_COLS - 1))
+    bcR.Merge
+    bcR.Value = "| || ||| || | ||| || | ||"
+    bcR.Font.Size = 7: bcR.Font.Name = "Courier New"
+    bcR.Font.Color = RGB(0, 0, 0): bcR.Interior.Color = RGB(255, 255, 255)
+    bcR.HorizontalAlignment = xlCenter: bcR.VerticalAlignment = xlCenter
+    bcR.WrapText = False
+
+    ' -------------------------------------------------------
+    ' Main content (full width, below upper-right area)
+    ' -------------------------------------------------------
+
+    ' Dept name (rows +5 to +6, all cols)
+    Call MC(ws, sRow+5, sCol, 2, BADGE_COLS, dept,    14, True,  fn, RGB(0,0,0),    RGB(255,255,255), xlLeft,   xlCenter)
+
+    ' Job type + position (row +7)
     Dim jp As String: jp = jobType
     If Trim(pos) <> "" Then jp = jp & ChrW(12288) & pos
-    Call MC(ws, sRow+3, sCol, 1, 7, jp,      10, False, FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlLeft,   xlCenter)
-    Call MC(ws, sRow+4, sCol, 4, 7, empKana, 32, True,  FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlCenter, xlCenter)
-    Call MC(ws, sRow+8, sCol, 1, 7, empName, 10, False, FN_MINCHO(), RGB(50,50,50), RGB(255,255,255), xlCenter, xlCenter)
+    Call MC(ws, sRow+7, sCol, 1, BADGE_COLS, jp,      10, False, fn, RGB(0,0,0),    RGB(255,255,255), xlLeft,   xlCenter)
 
-    ' Right area: blank (rows 0..+3), barcode (rows +4..+8)
-    Dim RC As Long: RC = sCol + 7
-    ws.Range(ws.Cells(sRow,   RC), ws.Cells(sRow+3, sCol+BADGE_COLS-1)).Merge
-    Dim bc As Range
-    Set bc = ws.Range(ws.Cells(sRow+4, RC), ws.Cells(sRow+8, sCol+BADGE_COLS-1))
-    bc.Merge
-    bc.Value = "| || ||| || | ||| || | ||"
-    bc.Font.Size = 7: bc.Font.Name = "Courier New": bc.Font.Color = RGB(0, 0, 0)
-    bc.Interior.Color = RGB(255, 255, 255)
-    bc.HorizontalAlignment = xlCenter: bc.VerticalAlignment = xlCenter
+    ' Surname in hiragana (rows +9 to +12, large)
+    Call MC(ws, sRow+9, sCol, 4, BADGE_COLS, empKana, 30, True,  fn, RGB(0,0,0),    RGB(255,255,255), xlCenter, xlCenter)
 
-    ' Blue bar (cols 0..+8) + ID (cols +9..+10)
-    Dim bar As Range
-    Set bar = ws.Range(ws.Cells(sRow+9, sCol), ws.Cells(sRow+9, sCol+8))
-    bar.Merge: bar.Interior.Color = RGB(42, 107, 183)
-    Dim idr As Range
-    Set idr = ws.Range(ws.Cells(sRow+9, sCol+9), ws.Cells(sRow+9, sCol+BADGE_COLS-1))
-    idr.Merge
-    idr.Value = empID: idr.Font.Size = 8: idr.Font.Name = "Arial"
-    idr.Font.Color = RGB(0,0,0): idr.Interior.Color = RGB(255,255,255)
-    idr.HorizontalAlignment = xlRight: idr.VerticalAlignment = xlCenter
+    ' Full name in kanji (row +13)
+    Call MC(ws, sRow+13, sCol, 1, BADGE_COLS, empName, 10, False, fn, RGB(50,50,50), RGB(255,255,255), xlCenter, xlCenter)
 
-    ' Footer (rows +10..+12)
+    ' -------------------------------------------------------
+    ' Footer (rows +15 to +17)
+    ' -------------------------------------------------------
     Dim fbg As Long: fbg = RGB(214, 234, 248)
     Dim fa As Range
-    Set fa = ws.Range(ws.Cells(sRow+10, sCol), ws.Cells(sRow+12, sCol+BADGE_COLS-1))
+    Set fa = ws.Range(ws.Cells(sRow+15, sCol), ws.Cells(sRow+17, sCol+BADGE_COLS-1))
     fa.Interior.Color = fbg
-    fa.Borders(xlEdgeTop).LineStyle = xlContinuous: fa.Borders(xlEdgeTop).Color = RGB(80, 80, 160)
-    ' Logo area (left 3 cols)
+    With fa.Borders(xlEdgeTop): .LineStyle = xlContinuous: .Color = RGB(80, 80, 160): End With
+
+    ' Logo area (left 3 cols of footer)
     Dim lr As Range
-    Set lr = ws.Range(ws.Cells(sRow+10, sCol), ws.Cells(sRow+12, sCol+2))
+    Set lr = ws.Range(ws.Cells(sRow+15, sCol), ws.Cells(sRow+17, sCol+2))
     lr.Merge: lr.Interior.Color = fbg
-    lr.Borders(xlEdgeRight).LineStyle = xlContinuous: lr.Borders(xlEdgeRight).Color = RGB(150, 150, 200)
-    ' Corp name + hospital name (right 8 cols)
-    Call MC(ws, sRow+10, sCol+3, 1, 8, STR_CORP(),     8,  False, FN_MINCHO(), RGB(0,0,0), fbg, xlLeft, xlCenter)
-    Call MC(ws, sRow+11, sCol+3, 2, 8, STR_HOSPITAL(), 13, True,  FN_MINCHO(), RGB(0,0,0), fbg, xlLeft, xlCenter)
+    With lr.Borders(xlEdgeRight): .LineStyle = xlContinuous: .Color = RGB(150, 150, 200): End With
+
+    ' Corp name (row +15) + hospital name (rows +16 to +17)
+    Call MC(ws, sRow+15, sCol+3, 1, BADGE_COLS-3, STR_CORP(),     8,  False, fn, RGB(0,0,0), fbg, xlLeft, xlCenter)
+    Call MC(ws, sRow+16, sCol+3, 2, BADGE_COLS-3, STR_HOSPITAL(), 13, True,  fn, RGB(0,0,0), fbg, xlLeft, xlCenter)
 
     Call TryInsertLogo(ws, sRow, sCol)
 End Sub
@@ -317,12 +358,12 @@ Private Sub MC(ws As Worksheet, sr As Long, sc As Long, nr As Integer, nc As Int
     rng.HorizontalAlignment = ha: rng.VerticalAlignment = va
 End Sub
 
-' Insert logo image into footer if tokushukai_logo.png exists next to the workbook
+' Insert logo image into footer if tokushukai_logo.png exists next to workbook
 Private Sub TryInsertLogo(ws As Worksheet, sRow As Long, sCol As Long)
     Dim lp As String: lp = ThisWorkbook.Path & "\tokushukai_logo.png"
     If Dir(lp) = "" Then Exit Sub
     Dim ar As Range
-    Set ar = ws.Range(ws.Cells(sRow+10, sCol), ws.Cells(sRow+12, sCol+2))
+    Set ar = ws.Range(ws.Cells(sRow+15, sCol), ws.Cells(sRow+17, sCol+2))
     On Error GoTo Ex
     Dim p As Shape
     Set p = ws.Shapes.AddPicture(Filename:=lp, LinkToFile:=msoFalse, _
@@ -342,14 +383,14 @@ Private Sub CreateMasterSheet()
     Set ws = Worksheets.Add(Before:=Worksheets(1))
     ws.Name = SH_MASTER()
 
-    ws.Cells(1,1).Value = ChrW(32887) & ChrW(21729) & "ID"                                              ' 職員ID
-    ws.Cells(1,2).Value = ChrW(27663) & ChrW(21517) & ChrW(65288) & ChrW(28450) & ChrW(23383) & ChrW(65289) ' 氏名（漢字）
-    ws.Cells(1,3).Value = ChrW(33495) & ChrW(23383) & ChrW(12402) & ChrW(12425) & ChrW(12364) & ChrW(12394) ' 苗字ひらがな
-    ws.Cells(1,4).Value = ChrW(37096) & ChrW(32626) & ChrW(21517)                                      ' 部署名
-    ws.Cells(1,5).Value = ChrW(32887) & ChrW(31278)                                                     ' 職種
-    ws.Cells(1,6).Value = ChrW(24441) & ChrW(32887)                                                     ' 役職
-    ws.Cells(1,7).Value = ChrW(20837) & ChrW(32887) & ChrW(26085)                                      ' 入職日
-    ws.Cells(1,8).Value = ChrW(21517) & ChrW(26413) & ChrW(20316) & ChrW(25104) & ChrW(26085)          ' 名札作成日
+    ws.Cells(1,1).Value = ChrW(32887) & ChrW(21729) & "ID"
+    ws.Cells(1,2).Value = ChrW(27663) & ChrW(21517) & ChrW(65288) & ChrW(28450) & ChrW(23383) & ChrW(65289)
+    ws.Cells(1,3).Value = ChrW(33495) & ChrW(23383) & ChrW(12402) & ChrW(12425) & ChrW(12364) & ChrW(12394)
+    ws.Cells(1,4).Value = ChrW(37096) & ChrW(32626) & ChrW(21517)
+    ws.Cells(1,5).Value = ChrW(32887) & ChrW(31278)
+    ws.Cells(1,6).Value = ChrW(24441) & ChrW(32887)
+    ws.Cells(1,7).Value = ChrW(20837) & ChrW(32887) & ChrW(26085)
+    ws.Cells(1,8).Value = ChrW(21517) & ChrW(26413) & ChrW(20316) & ChrW(25104) & ChrW(26085)
 
     With ws.Range("A1:H1")
         .Font.Bold = True: .Font.Color = RGB(255,255,255)
@@ -364,11 +405,11 @@ Private Sub CreateMasterSheet()
 
     ' Sample row
     ws.Cells(2,COL_ID).Value   = "108699"
-    ws.Cells(2,COL_NAME).Value = ChrW(26647) & ChrW(21407) & ChrW(12288) & ChrW(21083)  ' 栗原　剛
-    ws.Cells(2,COL_KANA).Value = ChrW(12367) & ChrW(12426) & ChrW(12399) & ChrW(12425)  ' くりはら
-    ws.Cells(2,COL_DEPT).Value = ChrW(32207) & ChrW(21209) & ChrW(35506)                ' 総務課
-    ws.Cells(2,COL_JOB).Value  = ChrW(20107) & ChrW(21209) & ChrW(21729)                ' 事務員
-    ws.Cells(2,COL_POS).Value  = ChrW(20027) & ChrW(20219)                              ' 主任
+    ws.Cells(2,COL_NAME).Value = ChrW(26647) & ChrW(21407) & ChrW(12288) & ChrW(21083)
+    ws.Cells(2,COL_KANA).Value = ChrW(12367) & ChrW(12426) & ChrW(12399) & ChrW(12425)
+    ws.Cells(2,COL_DEPT).Value = ChrW(32207) & ChrW(21209) & ChrW(35506)
+    ws.Cells(2,COL_JOB).Value  = ChrW(20107) & ChrW(21209) & ChrW(21729)
+    ws.Cells(2,COL_POS).Value  = ChrW(20027) & ChrW(20219)
     ws.Cells(2,COL_JOIN).Value = DateSerial(2026, 4, 1)
 
     ws.Activate
@@ -414,11 +455,8 @@ End Function
 Private Function SH_BADGE() As String    ' 名札印刷
     SH_BADGE = ChrW(21517) & ChrW(26413) & ChrW(21360) & ChrW(21047)
 End Function
-Private Function FN_GOTHIC() As String   ' MS Pゴシック
-    FN_GOTHIC = "MS P" & ChrW(12468) & ChrW(12471) & ChrW(12483) & ChrW(12463)
-End Function
-Private Function FN_MINCHO() As String   ' MS P明朝
-    FN_MINCHO = "MS P" & ChrW(26126) & ChrW(26397)
+Private Function FN_MEIRYO() As String
+    FN_MEIRYO = "Meiryo"
 End Function
 Private Function STR_CORP() As String    ' 医療法人　徳洲会
     STR_CORP = ChrW(21307) & ChrW(30274) & ChrW(27861) & ChrW(20154) & ChrW(12288) & ChrW(24499) & ChrW(27954) & ChrW(20250)
