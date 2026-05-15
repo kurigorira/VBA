@@ -293,10 +293,12 @@ End Function
 Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
     Dim rowCount As Integer: rowCount = ((cnt - 1) \ BADGES_PER_ROW) + 1
 
+    ' Row heights scaled from measured 45mm -> target 55mm (x1.222)
+    ' Total = 191pt = ~55mm
     Dim rh(13) As Single
-    rh(0)=2:   rh(1)=10:  rh(2)=13:  rh(3)=13:  rh(4)=4
-    rh(5)=12:  rh(6)=12:  rh(7)=11:  rh(8)=15:  rh(9)=15
-    rh(10)=15: rh(11)=11: rh(12)=12: rh(13)=12
+    rh(0)=2:   rh(1)=12:  rh(2)=16:  rh(3)=16:  rh(4)=5
+    rh(5)=15:  rh(6)=15:  rh(7)=13:  rh(8)=18:  rh(9)=18
+    rh(10)=18: rh(11)=13: rh(12)=15: rh(13)=15
 
     Dim rb As Integer, ri As Integer, br As Long
     For rb = 0 To rowCount - 1
@@ -307,11 +309,13 @@ Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
         If rb < rowCount - 1 Then ws.Rows(br + BADGE_ROWS).RowHeight = 4
     Next rb
 
+    ' Column widths scaled from measured 83mm -> target 90mm (x1.084)
+    ' Total = 34.4 units = ~90mm
     Dim cw(13) As Single
-    cw(0) = 0.8: cw(13) = 1.0
+    cw(0) = 0.9: cw(13) = 1.1
     Dim ci As Integer
     For ci = 1 To 12
-        cw(ci) = 2.5
+        cw(ci) = 2.7
     Next ci
 
     For ci = 0 To BADGE_COLS - 1
