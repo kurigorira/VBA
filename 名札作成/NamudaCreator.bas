@@ -1,7 +1,7 @@
 Attribute VB_Name = "NamudaCreator"
 ' Nagasaki Kita Tokushukai Hospital - Employee Badge Creator
 ' All Japanese text uses ChrW() so the .bas file imports correctly.
-' Badge: 90mm wide x 55mm tall (landscape), Meiryo font, NW7 barcode at top
+' Badge: 90mm wide x 55mm tall (landscape), Meiryo font, NW-7 barcode at top
 Option Explicit
 
 '==============================================================
@@ -49,10 +49,9 @@ Public Sub Setup()
 End Sub
 
 ' -------------------------------------------------------
-' Run this first if the barcode appears as plain text.
-' It scans common NW-7 font name candidates and reports
+' Run this if the barcode appears as plain text.
+' Scans common NW-7 font name candidates and reports
 ' which one is actually installed on this PC.
-' Then update FN_NW7() at the bottom of this module.
 ' -------------------------------------------------------
 Public Sub DetectBarcodeFont()
     If Not SheetExists(SH_BADGE()) Then Call CreateBadgeSheet
@@ -62,7 +61,7 @@ Public Sub DetectBarcodeFont()
 
     Dim cands() As String
     cands = Split( _
-        "NW7,NW-7,NW 7,CodaBar,Codabar,CODABAR," & _
+        "NW-7,NW7,NW 7,CodaBar,Codabar,CODABAR," & _
         "NW7Std,NW7 Std,Free NW7,NW7Bar," & _
         "NW-7 Barcode,NW7 Barcode,BarNW7," & _
         "Code NW7,IDAutomationSMNW7", ",")
@@ -84,7 +83,7 @@ Public Sub DetectBarcodeFont()
                "その後このモジュール末尾の FN_NW7() の返り値を正しいフォント名に変更してください。", _
                vbExclamation, "NW7フォントが見つかりません"
     Else
-        MsgBox "検出されたNW-7フォント:「" & vbCrLf & found & vbCrLf & _
+        MsgBox "検出されたNW-7フォント:" & vbCrLf & found & vbCrLf & _
                "FN_NW7()の返り値と一致している場合はそのままです。" & vbCrLf & _
                "違う場合は FN_NW7() を上記の名前に変更してください。", _
                vbInformation, "NW7フォント検出結果"
@@ -226,7 +225,6 @@ Private Sub ReadRow(ws As Worksheet, r As Long, empArr() As String, idx As Integ
 End Sub
 
 Private Sub GenerateBadges(empArr() As String, cnt As Integer)
-    ' Verify NW7 font before drawing
     If Not FontExists(FN_NW7()) Then
         If MsgBox("NW-7バーコードフォント [" & FN_NW7() & "] が見つかりません。" & vbCrLf & vbCrLf & _
                   "「DetectBarcodeFont」マクロを実行して正しいフォント名を確認することをお勧めします。" & vbCrLf & vbCrLf & _
@@ -249,7 +247,6 @@ Private Sub GenerateBadges(empArr() As String, cnt As Integer)
     wb.Cells(1, 1).Select
 End Sub
 
-' Returns True if the named font is installed and recognised by Excel
 Private Function FontExists(fontName As String) As Boolean
     If Not SheetExists(SH_BADGE()) Then Call CreateBadgeSheet
     Dim tmp As Range: Set tmp = Worksheets(SH_BADGE()).Range("A1")
@@ -259,16 +256,6 @@ Private Function FontExists(fontName As String) As Boolean
     tmp.Font.Name = orig
 End Function
 
-' Set row heights and column widths
-' Row  0 : top pad          2pt
-' Row  1 : ID text         10pt
-' Row 2-3 : NW7 barcode    13pt x2
-' Row  4 : spacer           4pt
-' Row 5-6 : dept            12pt x2
-' Row  7 : job/pos         11pt
-' Row 8-10: kana (large)   15pt x3
-' Row 11 : kanji name      11pt
-' Row12-13: footer         12pt x2  => total 157pt ~= 55mm
 Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
     Dim rowCount As Integer: rowCount = ((cnt - 1) \ BADGES_PER_ROW) + 1
 
@@ -286,7 +273,6 @@ Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
         If rb < rowCount - 1 Then ws.Rows(br + BADGE_ROWS).RowHeight = 4
     Next rb
 
-    ' col 0=0.8, col 1-12=2.5 each, col 13=1.0  => ~90mm
     Dim cw(13) As Single
     cw(0) = 0.8: cw(13) = 1.0
     Dim ci As Integer
@@ -311,16 +297,6 @@ Private Sub DrawOneBadge(ws As Worksheet, badgeIdx As Integer, _
     Call DrawBadgeContent(ws, sRow, sCol, empID, empName, empKana, dept, jobType, pos)
 End Sub
 
-' Badge layout (90mm wide x 55mm tall, landscape):
-'  +--------------------------------------------------+
-'  | 108699 (right, small)                   row +1  |
-'  | ======= NW7 barcode (full width) =====  rows+2,3|
-'  | 部署名                               rows+5,6  |
-'  | 職種　役職                           row  +7  |
-'  | くりはら (large)                   rows+8~10 |
-'  | 栗原 剛                              row  +11  |
-'  +--[logo]--医療法人　徳洲会----------rows+12,13|
-'  +--------------------------------------------------+
 Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
                               empID As String, empName As String, empKana As String, _
                               dept  As String, jobType As String, pos    As String)
@@ -337,13 +313,11 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
 
     Dim fn As String: fn = FN_MEIRYO()
 
-    ' --- Row +1 : ID number (human-readable, right-aligned) ---
+    ' Row +1: ID number (human-readable, right-aligned)
     Call MC(ws, sRow+1, sCol, 1, BADGE_COLS, empID, 8, False, fn, RGB(80,80,160), RGB(255,255,255), xlRight, xlCenter)
 
-    ' --- Rows +2,+3 : NW7 barcode (full width) ---
-    ' NW-7 (Codabar) format: start-char A + digits + stop-char A
-    ' If barcode still shows as text, run DetectBarcodeFont() to find the correct font name,
-    ' then update FN_NW7() at the bottom of this module.
+    ' Rows +2,+3: NW-7 barcode (full width)
+    ' Codabar format: start-char A + digits + stop-char A
     Dim bcR As Range
     Set bcR = ws.Range(ws.Cells(sRow+2, sCol), ws.Cells(sRow+3, sCol+BADGE_COLS-1))
     bcR.Merge
@@ -354,17 +328,17 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
     bcR.HorizontalAlignment = xlCenter: bcR.VerticalAlignment = xlCenter
     bcR.WrapText = False
 
-    ' --- Main content ---
+    ' Main content
     Call MC(ws, sRow+5, sCol, 2, BADGE_COLS, dept,    13, True,  fn, RGB(0,0,0),    RGB(255,255,255), xlLeft,   xlCenter)
 
     Dim jp As String: jp = jobType
     If Trim(pos) <> "" Then jp = jp & ChrW(12288) & pos
     Call MC(ws, sRow+7, sCol, 1, BADGE_COLS, jp,      10, False, fn, RGB(0,0,0),    RGB(255,255,255), xlLeft,   xlCenter)
 
-    Call MC(ws, sRow+8, sCol, 3, BADGE_COLS, empKana, 24, True,  fn, RGB(0,0,0),    RGB(255,255,255), xlCenter, xlCenter)
+    Call MC(ws, sRow+8,  sCol, 3, BADGE_COLS, empKana, 24, True,  fn, RGB(0,0,0),    RGB(255,255,255), xlCenter, xlCenter)
     Call MC(ws, sRow+11, sCol, 1, BADGE_COLS, empName, 10, False, fn, RGB(50,50,50), RGB(255,255,255), xlCenter, xlCenter)
 
-    ' --- Footer (rows +12,+13) ---
+    ' Footer (rows +12,+13)
     Dim fbg As Long: fbg = RGB(214, 234, 248)
     Dim fa As Range
     Set fa = ws.Range(ws.Cells(sRow+12, sCol), ws.Cells(sRow+13, sCol+BADGE_COLS-1))
@@ -491,14 +465,9 @@ End Function
 Private Function FN_MEIRYO() As String
     FN_MEIRYO = "Meiryo"
 End Function
-
-' *** NW-7 barcode font name ***
-' If the barcode shows as plain text (e.g. A108699A), run DetectBarcodeFont()
-' to find the correct name, then change the return value below.
 Private Function FN_NW7() As String
-    FN_NW7 = "NW7"
+    FN_NW7 = "NW-7"
 End Function
-
 Private Function STR_CORP() As String
     STR_CORP = ChrW(21307) & ChrW(30274) & ChrW(27861) & ChrW(20154) & ChrW(12288) & ChrW(24499) & ChrW(27954) & ChrW(20250)
 End Function
