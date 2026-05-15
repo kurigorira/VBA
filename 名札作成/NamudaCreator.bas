@@ -35,7 +35,6 @@ Private Const F_COLS As Integer = 6
 ' PUBLIC SUBS  (assign to buttons on the sheet)
 '==============================================================
 
-' Run once to create the two worksheets
 Public Sub Setup()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
@@ -48,11 +47,8 @@ Public Sub Setup()
     MsgBox "Setup complete.", vbInformation
 End Sub
 
-' -------------------------------------------------------
-' Run this if the barcode appears as plain text.
-' Scans common NW-7 font name candidates and reports
-' which one is actually installed on this PC.
-' -------------------------------------------------------
+' Run if the barcode appears as plain text (e.g. A108699A).
+' Scans common NW-7 font name candidates and shows which is installed.
 Public Sub DetectBarcodeFont()
     If Not SheetExists(SH_BADGE()) Then Call CreateBadgeSheet
     Dim ws As Worksheet: Set ws = Worksheets(SH_BADGE())
@@ -76,21 +72,49 @@ Public Sub DetectBarcodeFont()
     Next i
     tmp.Font.Name = orig
 
+    ' MSG1: NW-7フォントが見つかりません
+    Dim msg1 As String
+    msg1 = "NW-7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
+           ChrW(12364) & ChrW(35211) & ChrW(12388) & ChrW(12363) & ChrW(12426) & _
+           ChrW(12414) & ChrW(12379) & ChrW(12435) & ChrW(12290) & vbCrLf & vbCrLf & _
+           ChrW(30906) & ChrW(35469) & ChrW(26041) & ChrW(27861) & ": " & _
+           ChrW(12507) & ChrW(12540) & ChrW(12512) & ChrW(12479) & ChrW(12502) & _
+           " > " & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
+           ChrW(30058) & ChrW(12391) & "nw" & ChrW(12414) & ChrW(12383) & ChrW(12399) & _
+           "barcode" & ChrW(12391) & ChrW(26908) & ChrW(32034) & ChrW(12290) & vbCrLf & vbCrLf & _
+           ChrW(12381) & ChrW(12398) & ChrW(24460) & " FN_NW7() " & _
+           ChrW(12398) & ChrW(36820) & ChrW(12426) & ChrW(20516) & _
+           ChrW(12434) & ChrW(27491) & ChrW(12375) & ChrW(12356) & _
+           ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & ChrW(21517) & _
+           ChrW(12395) & ChrW(22793) & ChrW(26356) & ChrW(12375) & ChrW(12390) & ChrW(12367) & ChrW(12384) & ChrW(12373) & ChrW(12356) & ChrW(12290)
+
+    ' TTL1: NW7フォント未検出
+    Dim ttl1 As String
+    ttl1 = "NW7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
+           ChrW(26410) & ChrW(26908) & ChrW(20986)
+
+    ' MSG2: 検出されたNW-7フォント
+    Dim msg2 As String
+    msg2 = ChrW(26908) & ChrW(20986) & ChrW(12373) & ChrW(12428) & ChrW(12383) & _
+           "NW-7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & ":"
+
+    ' TTL2: NW7フォント検出結果
+    Dim ttl2 As String
+    ttl2 = "NW7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
+           ChrW(26908) & ChrW(20986) & ChrW(32080) & ChrW(26524)
+
     If found = "" Then
-        MsgBox "NW-7フォントが見つかりません。" & vbCrLf & vbCrLf & _
-               "確認方法:「ホーム」タブ　→「フォント」ドロップダウンを開き" & vbCrLf & _
-               "『nw』または『barcode』で検索してフォント名を確認してください。" & vbCrLf & vbCrLf & _
-               "その後このモジュール末尾の FN_NW7() の返り値を正しいフォント名に変更してください。", _
-               vbExclamation, "NW7フォントが見つかりません"
+        MsgBox msg1, vbExclamation, ttl1
     Else
-        MsgBox "検出されたNW-7フォント:" & vbCrLf & found & vbCrLf & _
-               "FN_NW7()の返り値と一致している場合はそのままです。" & vbCrLf & _
-               "違う場合は FN_NW7() を上記の名前に変更してください。", _
-               vbInformation, "NW7フォント検出結果"
+        MsgBox msg2 & vbCrLf & found & vbCrLf & _
+               "FN_NW7()" & ChrW(12398) & ChrW(36820) & ChrW(12426) & ChrW(20516) & _
+               ChrW(12392) & ChrW(19968) & ChrW(33268) & ChrW(12375) & ChrW(12390) & _
+               ChrW(12356) & ChrW(12428) & ChrW(12400) & ChrW(12381) & ChrW(12398) & _
+               ChrW(12414) & ChrW(12414) & ChrW(12391) & ChrW(12377) & ChrW(12290), _
+               vbInformation, ttl2
     End If
 End Sub
 
-' Create badges for rows selected in the master sheet
 Public Sub CreateBadgesSelected()
     Dim mn As String: mn = SH_MASTER()
     If Not SheetExists(mn) Then MsgBox "Run Setup first.", vbExclamation: Exit Sub
@@ -135,7 +159,6 @@ Public Sub CreateBadgesSelected()
     MsgBox validCnt & " badge(s) created.", vbInformation
 End Sub
 
-' Create badges for all employees
 Public Sub CreateBadgesAll()
     Dim mn As String: mn = SH_MASTER()
     If Not SheetExists(mn) Then MsgBox "Run Setup first.", vbExclamation: Exit Sub
@@ -162,7 +185,6 @@ Public Sub CreateBadgesAll()
     MsgBox cnt & " badge(s) created.", vbInformation
 End Sub
 
-' Create badges filtered by join year/month (e.g. April batch)
 Public Sub CreateBadgesByMonth()
     Dim mn As String: mn = SH_MASTER()
     If Not SheetExists(mn) Then MsgBox "Run Setup first.", vbExclamation: Exit Sub
@@ -202,7 +224,6 @@ NextRow:
     MsgBox cnt & " badge(s) created.", vbInformation
 End Sub
 
-' Print preview
 Public Sub BadgePrintPreview()
     If SheetExists(SH_BADGE()) Then
         Worksheets(SH_BADGE()).PrintPreview
@@ -226,10 +247,23 @@ End Sub
 
 Private Sub GenerateBadges(empArr() As String, cnt As Integer)
     If Not FontExists(FN_NW7()) Then
-        If MsgBox("NW-7バーコードフォント [" & FN_NW7() & "] が見つかりません。" & vbCrLf & vbCrLf & _
-                  "「DetectBarcodeFont」マクロを実行して正しいフォント名を確認することをお勧めします。" & vbCrLf & vbCrLf & _
-                  "そのまま続行しますか？", _
-                  vbYesNo + vbExclamation, "NW7フォント未検出") = vbNo Then Exit Sub
+        ' "NW-7バーコードフォント [xxx] が見つかりません。DetectBarcodeFontを実行して確認を。続行？"
+        Dim warnMsg As String
+        warnMsg = "NW-7" & ChrW(12496) & ChrW(12540) & ChrW(12467) & ChrW(12540) & ChrW(12489) & _
+                  ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & " [" & FN_NW7() & "] " & _
+                  ChrW(12364) & ChrW(35211) & ChrW(12388) & ChrW(12363) & ChrW(12426) & _
+                  ChrW(12414) & ChrW(12379) & ChrW(12435) & ChrW(12290) & vbCrLf & vbCrLf & _
+                  ChrW(12300) & "DetectBarcodeFont" & ChrW(12301) & ChrW(12510) & ChrW(12463) & _
+                  ChrW(12525) & ChrW(12434) & ChrW(23455) & ChrW(34892) & ChrW(12375) & _
+                  ChrW(12390) & ChrW(30906) & ChrW(35469) & ChrW(12434) & ChrW(12362) & _
+                  ChrW(21191) & ChrW(12417) & ChrW(12375) & ChrW(12414) & ChrW(12377) & _
+                  ChrW(12290) & vbCrLf & vbCrLf & _
+                  ChrW(12381) & ChrW(12398) & ChrW(12414) & ChrW(12414) & ChrW(32154) & _
+                  ChrW(34892) & ChrW(12375) & ChrW(12414) & ChrW(12377) & ChrW(12363) & ChrW(65311)
+        Dim warnTtl As String
+        warnTtl = "NW7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
+                  ChrW(26410) & ChrW(26908) & ChrW(20986)
+        If MsgBox(warnMsg, vbYesNo + vbExclamation, warnTtl) = vbNo Then Exit Sub
     End If
 
     Call ResetBadgeSheet
@@ -316,8 +350,7 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
     ' Row +1: ID number (human-readable, right-aligned)
     Call MC(ws, sRow+1, sCol, 1, BADGE_COLS, empID, 8, False, fn, RGB(80,80,160), RGB(255,255,255), xlRight, xlCenter)
 
-    ' Rows +2,+3: NW-7 barcode (full width)
-    ' Codabar format: start-char A + digits + stop-char A
+    ' Rows +2,+3: NW-7 barcode (full width, Codabar: A + digits + A)
     Dim bcR As Range
     Set bcR = ws.Range(ws.Cells(sRow+2, sCol), ws.Cells(sRow+3, sCol+BADGE_COLS-1))
     bcR.Merge
