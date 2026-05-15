@@ -1,12 +1,12 @@
 Attribute VB_Name = "NamudaCreator"
 '==============================================================
-' 長崎北徳洲会病院 職員名札作成システム v2.0
+' 長崎北徳洲会病院 職員名札作成システム v2.1
 ' レイアウト：横型（実物名札に準拠）
 '
 ' 名札構成：
 '   上左： 部署名、職種・役職
 '   中央： 苗字ひらがな（大）、氏名漢字
-'   右上： 顼写真エリア
+'   右上： 空白（写真なし）
 '   右下： バーコードエリア
 '   中段： 青いバー＋ID番号（右端）
 '   下部： 徳洲会ロゴ（左）＋医療法人徳洲会・長崎北徳洲会病院（右）
@@ -212,7 +212,7 @@ Private Sub SetCellDimensions(ws As Worksheet, sRow As Long, sCol As Long)
     cw(5) = 3.5
     cw(6) = 3    ' 左エリア右端
     cw(7) = 0.5  ' 中間ギャップ
-    cw(8) = 3    ' 右エリア（写真・バーコード）
+    cw(8) = 3    ' 右エリア（空白・バーコード）
     cw(9) = 3
     cw(10) = 1.5 ' 右パディング
     For i = 0 To BADGE_COLS - 1
@@ -254,7 +254,7 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
 
     ' ===== 左エリア (cols 0-6) ======================
 
-    ' 1. 部署名（行+1〜+2、左エリア）7列
+    ' 1. 部署名（行+1〜+2、左エリア）
     Call MC(ws, sRow + 1, sCol, 2, 7, dept, 14, True, "MS Pゴシック", _
             RGB(0, 0, 0), RGB(255, 255, 255), xlLeft, xlCenter)
 
@@ -276,29 +276,18 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
     Call MC(ws, sRow + 8, sCol, 1, 7, empName, 10, False, "MS P明朝", _
             RGB(50, 50, 50), RGB(255, 255, 255), xlCenter, xlCenter)
 
-    ' ===== 右エリア (cols 7-10) =====================
-    Dim RC As Long: RC = sCol + 7   ' 右エリア開始列
-    Dim RW As Integer: RW = 4       ' 右エリア列数 (cols 7,8,9,10)
+    ' ===== 右エリア (cols 7-10): 写真なし→空白 ============
+    Dim RC As Long: RC = sCol + 7
+    Dim RW As Integer: RW = 4   ' 列数
 
-    ' 5. 写真プレースホルダー（行+0〜+3）
-    Dim photoRng As Range
-    Set photoRng = ws.Range(ws.Cells(sRow, RC), _
+    ' 5. 上半分（行+0〜+3）: 空白
+    Dim blankTop As Range
+    Set blankTop = ws.Range(ws.Cells(sRow, RC), _
                              ws.Cells(sRow + 3, sCol + BADGE_COLS - 1))
-    photoRng.Merge
-    With photoRng
-        .Interior.Color      = RGB(220, 225, 235)
-        .Value               = "写真"
-        .Font.Size           = 9
-        .Font.Color          = RGB(150, 150, 150)
-        .HorizontalAlignment = xlCenter
-        .VerticalAlignment   = xlCenter
-    End With
-    photoRng.Borders(xlEdgeLeft).LineStyle   = xlContinuous
-    photoRng.Borders(xlEdgeLeft).Color       = RGB(160, 160, 200)
-    photoRng.Borders(xlEdgeBottom).LineStyle = xlContinuous
-    photoRng.Borders(xlEdgeBottom).Color     = RGB(160, 160, 200)
+    blankTop.Merge
+    blankTop.Interior.Color = RGB(255, 255, 255)
 
-    ' 6. バーコードエリア（行+4〜+8）
+    ' 6. 下半分（行+4〜+8）: バーコードエリア
     Dim bcRng As Range
     Set bcRng = ws.Range(ws.Cells(sRow + 4, RC), _
                           ws.Cells(sRow + 8, sCol + BADGE_COLS - 1))
@@ -313,8 +302,6 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
         .VerticalAlignment   = xlCenter
         .WrapText            = False
     End With
-    bcRng.Borders(xlEdgeLeft).LineStyle  = xlContinuous
-    bcRng.Borders(xlEdgeLeft).Color      = RGB(160, 160, 200)
 
     ' ===== 青いバー + ID（行+9） ======================
 
@@ -358,9 +345,7 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
     logoRng.Merge
     With logoRng
         .Interior.Color      = footBG
-        .Value               = "【ロゴ】"
-        .Font.Size           = 8
-        .Font.Color          = RGB(100, 100, 150)
+        .Value               = ""
         .HorizontalAlignment = xlCenter
         .VerticalAlignment   = xlCenter
     End With
@@ -461,7 +446,6 @@ Private Sub CreateMasterSheet()
     ws.Columns("G").NumberFormat = "yyyy/m/d"
     ws.Columns("H").NumberFormat = "yyyy/m/d"
 
-    ' サンプルデータ（写真の名札に合わせて削除してください）
     ws.Cells(2, COL_ID).Value   = "108699"
     ws.Cells(2, COL_NAME).Value = "栗原　剛"
     ws.Cells(2, COL_KANA).Value = "くりはら"
