@@ -1,9 +1,11 @@
 Attribute VB_Name = "NamudaCreator"
 ' Nagasaki Kita Tokushukai Hospital - Employee Badge Creator
-' All Japanese text uses ChrW() so the .bas file imports correctly
-' regardless of file encoding.
+' All Japanese text uses ChrW() so the .bas file imports correctly.
 Option Explicit
 
+'==============================================================
+' Constants  (module-level declarations FIRST)
+'==============================================================
 Private Const BADGE_ROWS     As Integer = 14
 Private Const BADGE_COLS     As Integer = 11
 Private Const BADGES_PER_ROW As Integer = 2
@@ -19,67 +21,20 @@ Private Const COL_POS  As Integer = 6
 Private Const COL_JOIN As Integer = 7
 Private Const COL_MADE As Integer = 8
 
-'--------------------------------------------------------------
-' Japanese string helpers (ChrW avoids encoding issues)
-'--------------------------------------------------------------
-Private Function SH_MASTER() As String
-    ' 職員マスター
-    SH_MASTER = ChrW(32887) & ChrW(21729) & ChrW(12510) & ChrW(12473) & ChrW(12479) & ChrW(12540)
-End Function
-
-Private Function SH_BADGE() As String
-    ' 名札印刷
-    SH_BADGE = ChrW(21517) & ChrW(26413) & ChrW(21360) & ChrW(21047)
-End Function
-
-Private Function FN_GOTHIC() As String
-    ' MS Pゴシック
-    FN_GOTHIC = "MS P" & ChrW(12468) & ChrW(12471) & ChrW(12483) & ChrW(12463)
-End Function
-
-Private Function FN_MINCHO() As String
-    ' MS P明朝
-    FN_MINCHO = "MS P" & ChrW(26126) & ChrW(26397)
-End Function
-
-Private Function STR_CORP() As String
-    ' 医療法人　徳洲会
-    STR_CORP = ChrW(21307) & ChrW(30274) & ChrW(27861) & ChrW(20154) & ChrW(12288) & ChrW(24499) & ChrW(27954) & ChrW(20250)
-End Function
-
-Private Function STR_HOSPITAL() As String
-    ' 長崎北徳洲会病院
-    STR_HOSPITAL = ChrW(38263) & ChrW(23822) & ChrW(21271) & ChrW(24499) & ChrW(27954) & ChrW(20250) & ChrW(30149) & ChrW(38498)
-End Function
-
-'--------------------------------------------------------------
-' Employee data type
-'--------------------------------------------------------------
-Private Type EmpData
-    ID      As String
-    Name    As String
-    Kana    As String
-    Dept    As String
-    JobType As String
-    Pos     As String
-End Type
-
-Private Function ReadEmpRow(ws As Worksheet, r As Long) As EmpData
-    Dim e As EmpData
-    e.ID      = CStr(ws.Cells(r, COL_ID).Value)
-    e.Name    = CStr(ws.Cells(r, COL_NAME).Value)
-    e.Kana    = CStr(ws.Cells(r, COL_KANA).Value)
-    e.Dept    = CStr(ws.Cells(r, COL_DEPT).Value)
-    e.JobType = CStr(ws.Cells(r, COL_JOB).Value)
-    e.Pos     = CStr(ws.Cells(r, COL_POS).Value)
-    ReadEmpRow = e
-End Function
+' Employee data array field indices
+Private Const F_ID   As Integer = 0
+Private Const F_NAME As Integer = 1
+Private Const F_KANA As Integer = 2
+Private Const F_DEPT As Integer = 3
+Private Const F_JOB  As Integer = 4
+Private Const F_POS  As Integer = 5
+Private Const F_COLS As Integer = 6   ' number of fields per employee
 
 '==============================================================
 ' PUBLIC SUBS  (assign to buttons on the sheet)
 '==============================================================
 
-' Initial setup: run once to create the two worksheets
+' Run once to create the two worksheets
 Public Sub Setup()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
@@ -100,7 +55,9 @@ Public Sub CreateBadgesSelected()
         MsgBox "Select rows in the " & mn & " sheet first.", vbExclamation: Exit Sub
     End If
 
-    Dim selRows() As Long, cnt As Integer: cnt = 0
+    ' Collect unique selected rows
+    Dim selRows() As Long
+    Dim cnt As Integer: cnt = 0
     Dim cel As Range
     For Each cel In Selection
         If cel.Row > 1 Then
@@ -119,19 +76,20 @@ Public Sub CreateBadgesSelected()
     If cnt = 0 Then MsgBox "Select data rows (row 2+).", vbInformation: Exit Sub
 
     Dim ws As Worksheet: Set ws = Worksheets(mn)
-    Dim empList() As EmpData: ReDim empList(cnt - 1)
+    Dim empArr() As String
+    ReDim empArr(cnt - 1, F_COLS - 1)
     Dim validCnt As Integer: validCnt = 0
     Dim i As Integer
     For i = 0 To cnt - 1
         Dim r As Long: r = selRows(i)
         If Trim(CStr(ws.Cells(r, COL_ID).Value)) <> "" Then
-            empList(validCnt) = ReadEmpRow(ws, r)
+            Call ReadRow(ws, r, empArr, validCnt)
             ws.Cells(r, COL_MADE).Value = Date
             validCnt = validCnt + 1
         End If
     Next i
     If validCnt = 0 Then MsgBox "No valid ID found.", vbInformation: Exit Sub
-    Call GenerateBadges(empList, validCnt)
+    Call GenerateBadges(empArr, validCnt)
     MsgBox validCnt & " badge(s) created.", vbInformation
 End Sub
 
@@ -143,12 +101,13 @@ Public Sub CreateBadgesAll()
     Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, COL_ID).End(xlUp).Row
     If lastRow < 2 Then MsgBox "No data found.", vbInformation: Exit Sub
 
-    Dim empList() As EmpData: ReDim empList(lastRow - 2)
+    Dim empArr() As String
+    ReDim empArr(lastRow - 2, F_COLS - 1)
     Dim cnt As Integer: cnt = 0
     Dim r As Long
     For r = 2 To lastRow
         If Trim(CStr(ws.Cells(r, COL_ID).Value)) <> "" Then
-            empList(cnt) = ReadEmpRow(ws, r)
+            Call ReadRow(ws, r, empArr, cnt)
             cnt = cnt + 1
         End If
     Next r
@@ -157,11 +116,11 @@ Public Sub CreateBadgesAll()
     For r = 2 To lastRow
         If Trim(CStr(ws.Cells(r, COL_ID).Value)) <> "" Then ws.Cells(r, COL_MADE).Value = Date
     Next r
-    Call GenerateBadges(empList, cnt)
+    Call GenerateBadges(empArr, cnt)
     MsgBox cnt & " badge(s) created.", vbInformation
 End Sub
 
-' Create badges filtered by join year/month  e.g. April batch
+' Create badges filtered by join year/month (e.g. April batch)
 Public Sub CreateBadgesByMonth()
     Dim mn As String: mn = SH_MASTER()
     If Not SheetExists(mn) Then MsgBox "Run Setup first.", vbExclamation: Exit Sub
@@ -172,12 +131,13 @@ Public Sub CreateBadgesByMonth()
     inputVal = Replace(inputVal, "-", "/")
     Dim parts() As String: parts = Split(inputVal, "/")
     If UBound(parts) < 1 Then MsgBox "Use format: 2026/4", vbExclamation: Exit Sub
-    Dim targetYear As Integer:  targetYear  = CInt(parts(0))
+    Dim targetYear  As Integer: targetYear  = CInt(parts(0))
     Dim targetMonth As Integer: targetMonth = CInt(parts(1))
 
     Dim ws As Worksheet: Set ws = Worksheets(mn)
     Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, COL_ID).End(xlUp).Row
-    Dim empList() As EmpData: ReDim empList(lastRow - 2)
+    Dim empArr() As String
+    ReDim empArr(lastRow - 2, F_COLS - 1)
     Dim cnt As Integer: cnt = 0
     Dim r As Long
     For r = 2 To lastRow
@@ -185,15 +145,18 @@ Public Sub CreateBadgesByMonth()
         Dim jd As Variant: jd = ws.Cells(r, COL_JOIN).Value
         If Not IsDate(jd) Then GoTo NextRow
         If Year(CDate(jd)) = targetYear And Month(CDate(jd)) = targetMonth Then
-            empList(cnt) = ReadEmpRow(ws, r)
+            Call ReadRow(ws, r, empArr, cnt)
             ws.Cells(r, COL_MADE).Value = Date
             cnt = cnt + 1
         End If
 NextRow:
     Next r
-    If cnt = 0 Then MsgBox "No employees found for " & targetYear & "/" & targetMonth, vbInformation: Exit Sub
-    If MsgBox("Create " & cnt & " badge(s) for " & targetYear & "/" & targetMonth & "?", vbYesNo + vbQuestion) = vbNo Then Exit Sub
-    Call GenerateBadges(empList, cnt)
+    If cnt = 0 Then
+        MsgBox "No employees for " & targetYear & "/" & targetMonth, vbInformation: Exit Sub
+    End If
+    If MsgBox("Create " & cnt & " badge(s) for " & targetYear & "/" & targetMonth & "?", _
+              vbYesNo + vbQuestion) = vbNo Then Exit Sub
+    Call GenerateBadges(empArr, cnt)
     MsgBox cnt & " badge(s) created.", vbInformation
 End Sub
 
@@ -202,28 +165,42 @@ Public Sub BadgePrintPreview()
     If SheetExists(SH_BADGE()) Then
         Worksheets(SH_BADGE()).PrintPreview
     Else
-        MsgBox "No badge sheet found. Create badges first.", vbExclamation
+        MsgBox "No badge sheet. Create badges first.", vbExclamation
     End If
 End Sub
 
 '==============================================================
-' PRIVATE: badge generation
+' PRIVATE: core logic
 '==============================================================
 
-Private Sub GenerateBadges(empList() As EmpData, cnt As Integer)
+' Read one master-sheet row into empArr(idx, *)
+Private Sub ReadRow(ws As Worksheet, r As Long, empArr() As String, idx As Integer)
+    empArr(idx, F_ID)   = CStr(ws.Cells(r, COL_ID).Value)
+    empArr(idx, F_NAME) = CStr(ws.Cells(r, COL_NAME).Value)
+    empArr(idx, F_KANA) = CStr(ws.Cells(r, COL_KANA).Value)
+    empArr(idx, F_DEPT) = CStr(ws.Cells(r, COL_DEPT).Value)
+    empArr(idx, F_JOB)  = CStr(ws.Cells(r, COL_JOB).Value)
+    empArr(idx, F_POS)  = CStr(ws.Cells(r, COL_POS).Value)
+End Sub
+
+' Reset badge sheet and draw all badges
+Private Sub GenerateBadges(empArr() As String, cnt As Integer)
     Call ResetBadgeSheet
     Dim wb As Worksheet: Set wb = Worksheets(SH_BADGE())
     Call SetAllDimensions(wb, cnt)
     Application.ScreenUpdating = False
     Dim i As Integer
     For i = 0 To cnt - 1
-        Call DrawOneBadge(wb, i, empList(i))
+        Call DrawOneBadge(wb, i, _
+            empArr(i, F_ID),   empArr(i, F_NAME), empArr(i, F_KANA), _
+            empArr(i, F_DEPT), empArr(i, F_JOB),  empArr(i, F_POS))
     Next i
     Application.ScreenUpdating = True
     wb.Activate
     wb.Cells(1, 1).Select
 End Sub
 
+' Set row heights and column widths for all badge positions
 Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
     Dim rowCount As Integer: rowCount = ((cnt - 1) \ BADGES_PER_ROW) + 1
     Dim rh(13) As Single
@@ -253,34 +230,42 @@ Private Sub SetAllDimensions(ws As Worksheet, cnt As Integer)
     Next ci
 End Sub
 
-Private Sub DrawOneBadge(ws As Worksheet, badgeIdx As Integer, emp As EmpData)
+' Draw one badge at the correct grid position
+Private Sub DrawOneBadge(ws As Worksheet, badgeIdx As Integer, _
+                          empID As String, empName As String, empKana As String, _
+                          dept  As String, jobType As String, pos    As String)
     Dim sRow As Long: sRow = (badgeIdx \ BADGES_PER_ROW) * (BADGE_ROWS + ROW_GAP) + 1
     Dim sCol As Long: sCol = (badgeIdx Mod BADGES_PER_ROW) * (BADGE_COLS + COL_GAP) + 1
-    Call DrawBadgeContent(ws, sRow, sCol, emp)
+    Call DrawBadgeContent(ws, sRow, sCol, empID, empName, empKana, dept, jobType, pos)
 End Sub
 
-Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, emp As EmpData)
+' Draw badge content into the cell range starting at (sRow, sCol)
+Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, _
+                              empID As String, empName As String, empKana As String, _
+                              dept  As String, jobType As String, pos    As String)
+    ' Clear area
     Dim fr As Range
     Set fr = ws.Range(ws.Cells(sRow, sCol), ws.Cells(sRow + BADGE_ROWS - 1, sCol + BADGE_COLS - 1))
     fr.UnMerge: fr.ClearContents: fr.ClearFormats
     fr.Interior.Color = RGB(255, 255, 255)
 
+    ' Outer border
     Dim fc As Long: fc = RGB(80, 80, 160)
     fr.Borders(xlEdgeLeft).LineStyle   = xlContinuous: fr.Borders(xlEdgeLeft).Weight   = xlMedium: fr.Borders(xlEdgeLeft).Color   = fc
     fr.Borders(xlEdgeRight).LineStyle  = xlContinuous: fr.Borders(xlEdgeRight).Weight  = xlMedium: fr.Borders(xlEdgeRight).Color  = fc
     fr.Borders(xlEdgeTop).LineStyle    = xlContinuous: fr.Borders(xlEdgeTop).Weight    = xlMedium: fr.Borders(xlEdgeTop).Color    = fc
     fr.Borders(xlEdgeBottom).LineStyle = xlContinuous: fr.Borders(xlEdgeBottom).Weight = xlMedium: fr.Borders(xlEdgeBottom).Color = fc
 
-    ' Left area
-    Call MC(ws, sRow+1, sCol, 2, 7, emp.Dept, 14, True,  FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlLeft,   xlCenter)
+    ' Left area: dept (rows +1,+2), job/pos (row +3), kana (rows +4..+7), name (row +8)
+    Call MC(ws, sRow+1, sCol, 2, 7, dept,    14, True,  FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlLeft,   xlCenter)
 
-    Dim jobPos As String: jobPos = emp.JobType
-    If Trim(emp.Pos) <> "" Then jobPos = jobPos & ChrW(12288) & emp.Pos
-    Call MC(ws, sRow+3, sCol, 1, 7, jobPos,   10, False, FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlLeft,   xlCenter)
-    Call MC(ws, sRow+4, sCol, 4, 7, emp.Kana, 32, True,  FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlCenter, xlCenter)
-    Call MC(ws, sRow+8, sCol, 1, 7, emp.Name, 10, False, FN_MINCHO(), RGB(50,50,50), RGB(255,255,255), xlCenter, xlCenter)
+    Dim jp As String: jp = jobType
+    If Trim(pos) <> "" Then jp = jp & ChrW(12288) & pos
+    Call MC(ws, sRow+3, sCol, 1, 7, jp,      10, False, FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlLeft,   xlCenter)
+    Call MC(ws, sRow+4, sCol, 4, 7, empKana, 32, True,  FN_GOTHIC(), RGB(0,0,0),   RGB(255,255,255), xlCenter, xlCenter)
+    Call MC(ws, sRow+8, sCol, 1, 7, empName, 10, False, FN_MINCHO(), RGB(50,50,50), RGB(255,255,255), xlCenter, xlCenter)
 
-    ' Right area: blank top, barcode bottom
+    ' Right area: blank (rows 0..+3), barcode (rows +4..+8)
     Dim RC As Long: RC = sCol + 7
     ws.Range(ws.Cells(sRow,   RC), ws.Cells(sRow+3, sCol+BADGE_COLS-1)).Merge
     Dim bc As Range
@@ -291,33 +276,36 @@ Private Sub DrawBadgeContent(ws As Worksheet, sRow As Long, sCol As Long, emp As
     bc.Interior.Color = RGB(255, 255, 255)
     bc.HorizontalAlignment = xlCenter: bc.VerticalAlignment = xlCenter
 
-    ' Blue bar + ID
+    ' Blue bar (cols 0..+8) + ID (cols +9..+10)
     Dim bar As Range
     Set bar = ws.Range(ws.Cells(sRow+9, sCol), ws.Cells(sRow+9, sCol+8))
     bar.Merge: bar.Interior.Color = RGB(42, 107, 183)
     Dim idr As Range
     Set idr = ws.Range(ws.Cells(sRow+9, sCol+9), ws.Cells(sRow+9, sCol+BADGE_COLS-1))
     idr.Merge
-    idr.Value = emp.ID: idr.Font.Size = 8: idr.Font.Name = "Arial"
+    idr.Value = empID: idr.Font.Size = 8: idr.Font.Name = "Arial"
     idr.Font.Color = RGB(0,0,0): idr.Interior.Color = RGB(255,255,255)
     idr.HorizontalAlignment = xlRight: idr.VerticalAlignment = xlCenter
 
-    ' Footer
+    ' Footer (rows +10..+12)
     Dim fbg As Long: fbg = RGB(214, 234, 248)
     Dim fa As Range
     Set fa = ws.Range(ws.Cells(sRow+10, sCol), ws.Cells(sRow+12, sCol+BADGE_COLS-1))
     fa.Interior.Color = fbg
     fa.Borders(xlEdgeTop).LineStyle = xlContinuous: fa.Borders(xlEdgeTop).Color = RGB(80, 80, 160)
+    ' Logo area (left 3 cols)
     Dim lr As Range
     Set lr = ws.Range(ws.Cells(sRow+10, sCol), ws.Cells(sRow+12, sCol+2))
     lr.Merge: lr.Interior.Color = fbg
     lr.Borders(xlEdgeRight).LineStyle = xlContinuous: lr.Borders(xlEdgeRight).Color = RGB(150, 150, 200)
+    ' Corp name + hospital name (right 8 cols)
     Call MC(ws, sRow+10, sCol+3, 1, 8, STR_CORP(),     8,  False, FN_MINCHO(), RGB(0,0,0), fbg, xlLeft, xlCenter)
     Call MC(ws, sRow+11, sCol+3, 2, 8, STR_HOSPITAL(), 13, True,  FN_MINCHO(), RGB(0,0,0), fbg, xlLeft, xlCenter)
 
     Call TryInsertLogo(ws, sRow, sCol)
 End Sub
 
+' Merge cells and apply formatting + value
 Private Sub MC(ws As Worksheet, sr As Long, sc As Long, nr As Integer, nc As Integer, _
                val As String, sz As Integer, bold As Boolean, fn As String, _
                fc As Long, bg As Long, ha As XlHAlign, va As XlVAlign)
@@ -329,6 +317,7 @@ Private Sub MC(ws As Worksheet, sr As Long, sc As Long, nr As Integer, nc As Int
     rng.HorizontalAlignment = ha: rng.VerticalAlignment = va
 End Sub
 
+' Insert logo image into footer if tokushukai_logo.png exists next to the workbook
 Private Sub TryInsertLogo(ws As Worksheet, sRow As Long, sCol As Long)
     Dim lp As String: lp = ThisWorkbook.Path & "\tokushukai_logo.png"
     If Dir(lp) = "" Then Exit Sub
@@ -344,7 +333,7 @@ Ex: On Error GoTo 0
 End Sub
 
 '==============================================================
-' PRIVATE: sheet creation
+' PRIVATE: sheet creation / helpers
 '==============================================================
 
 Private Sub CreateMasterSheet()
@@ -353,18 +342,14 @@ Private Sub CreateMasterSheet()
     Set ws = Worksheets.Add(Before:=Worksheets(1))
     ws.Name = SH_MASTER()
 
-    ' Column headers
-    ws.Cells(1,1).Value = ChrW(32887) & ChrW(21729) & "ID"  ' 職員ID
-    ws.Cells(1,2).Value = ChrW(27663) & ChrW(21517) & _     ' 氏名（漢字）
-                          ChrW(65288) & ChrW(28450) & ChrW(23383) & ChrW(65289)
-    ws.Cells(1,3).Value = ChrW(33495) & ChrW(23383) & _     ' 苗字ひらがな
-                          ChrW(12402) & ChrW(12425) & ChrW(12364) & ChrW(12394)
-    ws.Cells(1,4).Value = ChrW(37096) & ChrW(32626) & ChrW(21517)          ' 部署名
-    ws.Cells(1,5).Value = ChrW(32887) & ChrW(31278)                         ' 職種
-    ws.Cells(1,6).Value = ChrW(24441) & ChrW(32887)                         ' 役職
-    ws.Cells(1,7).Value = ChrW(20837) & ChrW(32887) & ChrW(26085)           ' 入職日
-    ws.Cells(1,8).Value = ChrW(21517) & ChrW(26413) & _                    ' 名札作成日
-                          ChrW(20316) & ChrW(25104) & ChrW(26085)
+    ws.Cells(1,1).Value = ChrW(32887) & ChrW(21729) & "ID"                                              ' 職員ID
+    ws.Cells(1,2).Value = ChrW(27663) & ChrW(21517) & ChrW(65288) & ChrW(28450) & ChrW(23383) & ChrW(65289) ' 氏名（漢字）
+    ws.Cells(1,3).Value = ChrW(33495) & ChrW(23383) & ChrW(12402) & ChrW(12425) & ChrW(12364) & ChrW(12394) ' 苗字ひらがな
+    ws.Cells(1,4).Value = ChrW(37096) & ChrW(32626) & ChrW(21517)                                      ' 部署名
+    ws.Cells(1,5).Value = ChrW(32887) & ChrW(31278)                                                     ' 職種
+    ws.Cells(1,6).Value = ChrW(24441) & ChrW(32887)                                                     ' 役職
+    ws.Cells(1,7).Value = ChrW(20837) & ChrW(32887) & ChrW(26085)                                      ' 入職日
+    ws.Cells(1,8).Value = ChrW(21517) & ChrW(26413) & ChrW(20316) & ChrW(25104) & ChrW(26085)          ' 名札作成日
 
     With ws.Range("A1:H1")
         .Font.Bold = True: .Font.Color = RGB(255,255,255)
@@ -377,7 +362,7 @@ Private Sub CreateMasterSheet()
     ws.Columns("G").NumberFormat = "yyyy/m/d"
     ws.Columns("H").NumberFormat = "yyyy/m/d"
 
-    ' Sample row (delete after confirming)
+    ' Sample row
     ws.Cells(2,COL_ID).Value   = "108699"
     ws.Cells(2,COL_NAME).Value = ChrW(26647) & ChrW(21407) & ChrW(12288) & ChrW(21083)  ' 栗原　剛
     ws.Cells(2,COL_KANA).Value = ChrW(12367) & ChrW(12426) & ChrW(12399) & ChrW(12425)  ' くりはら
@@ -418,4 +403,26 @@ Private Function SheetExists(sName As String) As Boolean
     Dim ws As Worksheet
     On Error Resume Next: Set ws = Worksheets(sName): On Error GoTo 0
     SheetExists = Not (ws Is Nothing)
+End Function
+
+'--------------------------------------------------------------
+' Japanese string helpers  (ChrW = encoding-independent)
+'--------------------------------------------------------------
+Private Function SH_MASTER() As String   ' 職員マスター
+    SH_MASTER = ChrW(32887) & ChrW(21729) & ChrW(12510) & ChrW(12473) & ChrW(12479) & ChrW(12540)
+End Function
+Private Function SH_BADGE() As String    ' 名札印刷
+    SH_BADGE = ChrW(21517) & ChrW(26413) & ChrW(21360) & ChrW(21047)
+End Function
+Private Function FN_GOTHIC() As String   ' MS Pゴシック
+    FN_GOTHIC = "MS P" & ChrW(12468) & ChrW(12471) & ChrW(12483) & ChrW(12463)
+End Function
+Private Function FN_MINCHO() As String   ' MS P明朝
+    FN_MINCHO = "MS P" & ChrW(26126) & ChrW(26397)
+End Function
+Private Function STR_CORP() As String    ' 医療法人　徳洲会
+    STR_CORP = ChrW(21307) & ChrW(30274) & ChrW(27861) & ChrW(20154) & ChrW(12288) & ChrW(24499) & ChrW(27954) & ChrW(20250)
+End Function
+Private Function STR_HOSPITAL() As String  ' 長崎北徳洲会病院
+    STR_HOSPITAL = ChrW(38263) & ChrW(23822) & ChrW(21271) & ChrW(24499) & ChrW(27954) & ChrW(20250) & ChrW(30149) & ChrW(38498)
 End Function
