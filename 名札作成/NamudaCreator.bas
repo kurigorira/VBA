@@ -72,7 +72,7 @@ Public Sub DetectBarcodeFont()
     Next i
     tmp.Font.Name = orig
 
-    ' MSG1: NW-7フォントが見つかりません
+    ' MSG1: NW-7 font not found
     Dim msg1 As String
     msg1 = "NW-7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
            ChrW(12364) & ChrW(35211) & ChrW(12388) & ChrW(12363) & ChrW(12426) & _
@@ -88,17 +88,17 @@ Public Sub DetectBarcodeFont()
            ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & ChrW(21517) & _
            ChrW(12395) & ChrW(22793) & ChrW(26356) & ChrW(12375) & ChrW(12390) & ChrW(12367) & ChrW(12384) & ChrW(12373) & ChrW(12356) & ChrW(12290)
 
-    ' TTL1: NW7フォント未検出
+    ' TTL1: NW7 font not detected
     Dim ttl1 As String
     ttl1 = "NW7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
            ChrW(26410) & ChrW(26908) & ChrW(20986)
 
-    ' MSG2: 検出されたNW-7フォント
+    ' MSG2: Detected NW-7 font(s)
     Dim msg2 As String
     msg2 = ChrW(26908) & ChrW(20986) & ChrW(12373) & ChrW(12428) & ChrW(12383) & _
            "NW-7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & ":"
 
-    ' TTL2: NW7フォント検出結果
+    ' TTL2: NW7 font detection result
     Dim ttl2 As String
     ttl2 = "NW7" & ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & _
            ChrW(26908) & ChrW(20986) & ChrW(32080) & ChrW(26524)
@@ -247,7 +247,7 @@ End Sub
 
 Private Sub GenerateBadges(empArr() As String, cnt As Integer)
     If Not FontExists(FN_NW7()) Then
-        ' "NW-7バーコードフォント [xxx] が見つかりません。DetectBarcodeFontを実行して確認を。続行？"
+        ' "NW-7 barcode font [xxx] not found. Run DetectBarcodeFont to check. Continue?"
         Dim warnMsg As String
         warnMsg = "NW-7" & ChrW(12496) & ChrW(12540) & ChrW(12467) & ChrW(12540) & ChrW(12489) & _
                   ChrW(12501) & ChrW(12457) & ChrW(12531) & ChrW(12488) & " [" & FN_NW7() & "] " & _
