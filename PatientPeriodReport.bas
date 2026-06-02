@@ -2,65 +2,65 @@ Attribute VB_Name = "PatientPeriodReport"
 Option Explicit
 
 ' ============================================================
-'  å…¥é™¢æ‚£è€… æœŸé–“ç®¡ç†ãƒ¬ãƒãƒ¼ãƒˆä½œæˆãƒã‚¯ãƒ­
-'  å¯¾è±¡CSVåˆ—: B=ç—…æ£Ÿ, D=æ‚£è€…æ°å, G=æ‚£è€…ã‚³ãƒ¼ãƒ‰, O=å…¥é™¢æ—¥,
-'             AP=å…¥é™¢æœŸé–“åŒºåˆ†, AU-AY=DPCé–¢é€£æœŸé–“æƒ…å ±
+'  “ü‰@Š³Ò ŠúŠÔŠÇ—ƒŒƒ|[ƒgì¬ƒ}ƒNƒ
+'  ‘ÎÛCSV—ñ: B=•a“, D=Š³Ò–¼, G=Š³ÒƒR[ƒh, O=“ü‰@“ú,
+'             AP=“ü‰@ŠúŠÔ‹æ•ª, AU-AY=DPCŠÖ˜AŠúŠÔî•ñ
 '
-'  ã€ä½¿ã„æ–¹ã€‘
-'   1. ã“ã®ãƒã‚¯ãƒ­ãŒå…¥ã£ãŸ .xlsm ã‚’é–‹ã
-'   2. Alt+F8 â†’ CreatePatientReport ã‚’å®Ÿè¡Œï¼ˆã¾ãŸã¯ãƒœã‚¿ãƒ³ã‚’ã‚¯ãƒªãƒƒã‚¯ï¼‰
-'   3. CSVãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠã™ã‚‹ã ã‘ã§ã€Œãƒ¬ãƒãƒ¼ãƒˆã€ã‚·ãƒ¼ãƒˆãŒç”Ÿæˆã•ã‚Œã‚‹
-'   4. å†…å®¹ç¢ºèªå¾Œã€ãƒ•ã‚¡ã‚¤ãƒ«â†’åå‰ã‚’ä»˜ã‘ã¦ä¿å­˜ ã§æ—¥ä»˜åˆ¥ã«ä¿å­˜ã™ã‚‹
+'  yg‚¢•ûz
+'   1. ‚±‚Ìƒ}ƒNƒ‚ª“ü‚Á‚½ .xlsm ‚ğŠJ‚­
+'   2. Alt+F8 ¨ CreatePatientReport ‚ğÀsi‚Ü‚½‚Íƒ{ƒ^ƒ“‚ğƒNƒŠƒbƒNj
+'   3. CSVƒtƒ@ƒCƒ‹‚ğ‘I‘ğ‚·‚é‚¾‚¯‚ÅuƒŒƒ|[ƒgvƒV[ƒg‚ª¶¬‚³‚ê‚é
+'   4. “à—eŠm”FŒãAƒtƒ@ƒCƒ‹¨–¼‘O‚ğ•t‚¯‚Ä•Û‘¶ ‚Å“ú•t•Ê‚É•Û‘¶‚·‚é
 '
-'  ã€ãƒœã‚¿ãƒ³è¨­ç½®æ–¹æ³•ã€‘
-'   é–‹ç™ºã‚¿ãƒ–â†’æŒ¿å…¥â†’ãƒ•ã‚©ãƒ¼ãƒ ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«â†’ãƒœã‚¿ãƒ³ ã‚’é…ç½®ã—
-'   CreatePatientReport ã‚’å‰²ã‚Šå½“ã¦ã‚‹
+'  yƒ{ƒ^ƒ“İ’u•û–@z
+'   ŠJ”­ƒ^ƒu¨‘}“ü¨ƒtƒH[ƒ€ƒRƒ“ƒgƒ[ƒ‹¨ƒ{ƒ^ƒ“ ‚ğ”z’u‚µ
+'   CreatePatientReport ‚ğŠ„‚è“–‚Ä‚é
 ' ============================================================
 
-' --- å…ƒCSVã®åˆ—ç•ªå·ï¼ˆExcelä¸Šã§é–‹ã„ãŸã¨ãã€1å§‹ã¾ã‚Šï¼‰ ---
-Private Const CSV_B  As Integer = 2   ' ç—…æ£Ÿ
-Private Const CSV_D  As Integer = 4   ' æ‚£è€…æ°å
-Private Const CSV_G  As Integer = 7   ' æ‚£è€…ã‚³ãƒ¼ãƒ‰
-Private Const CSV_O  As Integer = 15  ' å…¥é™¢æ—¥
-Private Const CSV_AP As Integer = 42  ' å…¥é™¢æœŸé–“åŒºåˆ†
-Private Const CSV_AU As Integer = 47  ' AUåˆ—ï¼ˆæ‰‹è¡“ç­‰äºˆå®šâ‘ ï¼‰
-Private Const CSV_AV As Integer = 48  ' AVåˆ—ï¼ˆæ‰‹è¡“ç­‰äºˆå®šâ‘¡ï¼‰
-Private Const CSV_AW As Integer = 49  ' AWåˆ—ï¼ˆDPCæœŸé–“â‘   â€»æ®‹ã‚Šæ—¥æ•°å«ã‚€å¯ï¼‰
-Private Const CSV_AX As Integer = 50  ' AXåˆ—ï¼ˆDPCæœŸé–“â‘¡  â€»æ®‹ã‚Šæ—¥æ•°å«ã‚€å¯ï¼‰
-Private Const CSV_AY As Integer = 51  ' AYåˆ—ï¼ˆDPCæœŸé–“â‘¢  â€»æ®‹ã‚Šæ—¥æ•°å«ã‚€å¯ï¼‰
+' --- Œ³CSV‚Ì—ñ”Ô†iExcelã‚ÅŠJ‚¢‚½‚Æ‚«A1n‚Ü‚èj ---
+Private Const CSV_B  As Integer = 2   ' •a“
+Private Const CSV_D  As Integer = 4   ' Š³Ò–¼
+Private Const CSV_G  As Integer = 7   ' Š³ÒƒR[ƒh
+Private Const CSV_O  As Integer = 15  ' “ü‰@“ú
+Private Const CSV_AP As Integer = 42  ' “ü‰@ŠúŠÔ‹æ•ª
+Private Const CSV_AU As Integer = 47  ' AU—ñièp“™—\’è‡@j
+Private Const CSV_AV As Integer = 48  ' AV—ñièp“™—\’è‡Aj
+Private Const CSV_AW As Integer = 49  ' AW—ñiDPCŠúŠÔ‡@  ¦c‚è“ú”ŠÜ‚Ş‰Âj
+Private Const CSV_AX As Integer = 50  ' AX—ñiDPCŠúŠÔ‡A  ¦c‚è“ú”ŠÜ‚Ş‰Âj
+Private Const CSV_AY As Integer = 51  ' AY—ñiDPCŠúŠÔ‡B  ¦c‚è“ú”ŠÜ‚Ş‰Âj
 
-' --- å…¥é™¢æœŸé–“â‘¢ æ®‹ã‚Šæ—¥æ•°ã—ãã„å€¤ ---
-Private Const THRESHOLD_CRITICAL As Integer = 7   ' èµ¤ï¼šæ®‹ã‚Š7æ—¥ä»¥å†…
-Private Const THRESHOLD_WARNING  As Integer = 14  ' é»„ï¼šæ®‹ã‚Š14æ—¥ä»¥å†…
+' --- “ü‰@ŠúŠÔ‡B c‚è“ú”‚µ‚«‚¢’l ---
+Private Const THRESHOLD_CRITICAL As Integer = 7   ' ÔFc‚è7“úˆÈ“à
+Private Const THRESHOLD_WARNING  As Integer = 14  ' ‰©Fc‚è14“úˆÈ“à
 
-' --- ãƒ¬ãƒãƒ¼ãƒˆå‡ºåŠ›åˆ—ï¼ˆ1å§‹ã¾ã‚Šï¼‰ ---
-Private Const R_BYOTO   As Integer = 1  ' ç—…æ£Ÿ
-Private Const R_NAME    As Integer = 2  ' æ‚£è€…æ°å
-Private Const R_PATNO   As Integer = 3  ' æ‚£è€…ã‚³ãƒ¼ãƒ‰
-Private Const R_NYUIN   As Integer = 4  ' å…¥é™¢æ—¥
-Private Const R_PERIOD  As Integer = 5  ' å…¥é™¢æœŸé–“åŒºåˆ†
-Private Const R_REMAIN  As Integer = 6  ' æ®‹ã‚Šæ—¥æ•°ï¼ˆæ•°å€¤ï¼‰
-Private Const R_AU      As Integer = 7  ' AUåˆ—
-Private Const R_AV      As Integer = 8  ' AVåˆ—
-Private Const R_AW      As Integer = 9  ' AWåˆ—
-Private Const R_AX      As Integer = 10 ' AXåˆ—
-Private Const R_AY      As Integer = 11 ' AYåˆ—
+' --- ƒŒƒ|[ƒgo—Í—ñi1n‚Ü‚èj ---
+Private Const R_BYOTO   As Integer = 1  ' •a“
+Private Const R_NAME    As Integer = 2  ' Š³Ò–¼
+Private Const R_PATNO   As Integer = 3  ' Š³ÒƒR[ƒh
+Private Const R_NYUIN   As Integer = 4  ' “ü‰@“ú
+Private Const R_PERIOD  As Integer = 5  ' “ü‰@ŠúŠÔ‹æ•ª
+Private Const R_REMAIN  As Integer = 6  ' c‚è“ú”i”’lj
+Private Const R_AU      As Integer = 7  ' AU—ñ
+Private Const R_AV      As Integer = 8  ' AV—ñ
+Private Const R_AW      As Integer = 9  ' AW—ñ
+Private Const R_AX      As Integer = 10 ' AX—ñ
+Private Const R_AY      As Integer = 11 ' AY—ñ
 
-Private Const R_MAX_COL As Integer = 11 ' æœ€çµ‚å‡ºåŠ›åˆ—æ•°
+Private Const R_MAX_COL As Integer = 11 ' ÅIo—Í—ñ”
 
-' å‰å›ä½¿ç”¨ãƒ•ã‚©ãƒ«ãƒ€ã‚’è¨˜æ†¶ã™ã‚‹ã‚»ãƒ«ä½ç½®ï¼ˆè¨­å®šã‚·ãƒ¼ãƒˆï¼‰
-Private Const SETTING_SHEET As String = "è¨­å®š"
+' ‘O‰ñg—pƒtƒHƒ‹ƒ_‚ğ‹L‰¯‚·‚éƒZƒ‹ˆÊ’uiİ’èƒV[ƒgj
+Private Const SETTING_SHEET As String = "İ’è"
 Private Const SETTING_LASTFOLDER_ROW As Long = 1
 Private Const SETTING_LASTFOLDER_COL As Long = 2
 
-' --- æ‚£è€…ãƒ‡ãƒ¼ã‚¿å‹ ---
+' --- Š³Òƒf[ƒ^Œ^ ---
 Private Type PatientData
-    byoto     As String  ' ç—…æ£Ÿ
-    name      As String  ' æ‚£è€…æ°å
-    patNo     As String  ' æ‚£è€…ã‚³ãƒ¼ãƒ‰
-    nyuinDate As String  ' å…¥é™¢æ—¥
-    period    As String  ' å…¥é™¢æœŸé–“åŒºåˆ†
-    remainDays As Long   ' æ®‹ã‚Šæ—¥æ•°ï¼ˆ-1=å¯¾è±¡å¤–ï¼‰
+    byoto     As String  ' •a“
+    name      As String  ' Š³Ò–¼
+    patNo     As String  ' Š³ÒƒR[ƒh
+    nyuinDate As String  ' “ü‰@“ú
+    period    As String  ' “ü‰@ŠúŠÔ‹æ•ª
+    remainDays As Long   ' c‚è“ú”i-1=‘ÎÛŠOj
     colAU     As String
     colAV     As String
     colAW     As String
@@ -69,32 +69,32 @@ Private Type PatientData
 End Type
 
 ' =============================================================
-' ãƒ¡ã‚¤ãƒ³ã‚¨ãƒ³ãƒˆãƒªãƒã‚¤ãƒ³ãƒˆï¼ˆãƒœã‚¿ãƒ³ã¾ãŸã¯ãƒã‚¯ãƒ­å®Ÿè¡Œã§å‘¼ã¶ï¼‰
+' ƒƒCƒ“ƒGƒ“ƒgƒŠƒ|ƒCƒ“ƒgiƒ{ƒ^ƒ“‚Ü‚½‚Íƒ}ƒNƒÀs‚ÅŒÄ‚Ôj
 ' =============================================================
 Public Sub CreatePatientReport()
     Dim fd As FileDialog
     Dim csvPath As String
     Dim initFolder As String
 
-    ' å‰å›ãƒ•ã‚©ãƒ«ãƒ€ã‚’å–å¾—
+    ' ‘O‰ñƒtƒHƒ‹ƒ_‚ğæ“¾
     initFolder = GetLastFolder()
 
-    ' ---- CSVãƒ•ã‚¡ã‚¤ãƒ«é¸æŠ ----
+    ' ---- CSVƒtƒ@ƒCƒ‹‘I‘ğ ----
     Set fd = Application.FileDialog(msoFileDialogFilePicker)
     With fd
-        .Title = "å…¥é™¢æ‚£è€…CSVãƒ•ã‚¡ã‚¤ãƒ«ã‚’é¸æŠã—ã¦ãã ã•ã„"
+        .Title = "“ü‰@Š³ÒCSVƒtƒ@ƒCƒ‹‚ğ‘I‘ğ‚µ‚Ä‚­‚¾‚³‚¢"
         .Filters.Clear
-        .Filters.Add "CSVãƒ•ã‚¡ã‚¤ãƒ«", "*.csv"
+        .Filters.Add "CSVƒtƒ@ƒCƒ‹", "*.csv"
         .AllowMultiSelect = False
         If initFolder <> "" Then .InitialFileName = initFolder & "\"
         If .Show <> -1 Then
-            MsgBox "ãƒ•ã‚¡ã‚¤ãƒ«ãŒé¸æŠã•ã‚Œã¾ã›ã‚“ã§ã—ãŸã€‚å‡¦ç†ã‚’ä¸­æ–­ã—ã¾ã™ã€‚", vbExclamation
+            MsgBox "ƒtƒ@ƒCƒ‹‚ª‘I‘ğ‚³‚ê‚Ü‚¹‚ñ‚Å‚µ‚½Bˆ—‚ğ’†’f‚µ‚Ü‚·B", vbExclamation
             Exit Sub
         End If
         csvPath = .SelectedItems(1)
     End With
 
-    ' ãƒ•ã‚©ãƒ«ãƒ€ã‚’è¨˜æ†¶
+    ' ƒtƒHƒ‹ƒ_‚ğ‹L‰¯
     SaveLastFolder Left(csvPath, InStrRev(csvPath, "\") - 1)
 
     Application.ScreenUpdating = False
@@ -103,7 +103,7 @@ Public Sub CreatePatientReport()
 
     On Error GoTo ErrHandler
 
-    ' ---- CSVã‚’ãƒ¯ãƒ¼ã‚¯ãƒ–ãƒƒã‚¯ã¨ã—ã¦é–‹ãï¼ˆShift-JISå¯¾å¿œï¼‰ ----
+    ' ---- CSV‚ğƒ[ƒNƒuƒbƒN‚Æ‚µ‚ÄŠJ‚­iShift-JIS‘Î‰j ----
     Dim wbCSV As Workbook
     Dim wsCSV As Worksheet
     Set wbCSV = Workbooks.Open( _
@@ -113,7 +113,7 @@ Public Sub CreatePatientReport()
         Origin:=xlWindows)
     Set wsCSV = wbCSV.Sheets(1)
 
-    ' ---- ãƒ‡ãƒ¼ã‚¿èª­ã¿è¾¼ã¿ ----
+    ' ---- ƒf[ƒ^“Ç‚İ‚İ ----
     Dim lastRow As Long
     lastRow = wsCSV.Cells(wsCSV.Rows.Count, 1).End(xlUp).Row
 
@@ -138,7 +138,7 @@ Public Sub CreatePatientReport()
         p.colAX     = SafeStr(wsCSV.Cells(i, CSV_AX))
         p.colAY     = SafeStr(wsCSV.Cells(i, CSV_AY))
 
-        ' æ®‹ã‚Šæ—¥æ•°ã‚’ AWâ†’AXâ†’AY ã®é †ã«æ¢ã™ï¼ˆå„è¡Œã«å¿…ãš1ã¤å­˜åœ¨ï¼‰
+        ' c‚è“ú”‚ğ AW¨AX¨AY ‚Ì‡‚É’T‚·iŠes‚É•K‚¸1‚Â‘¶İj
         p.remainDays = -1
         Dim rd As Long
         rd = ExtractRemainingDays(p.colAW)
@@ -160,21 +160,21 @@ Public Sub CreatePatientReport()
 NextRow:
     Next i
 
-    ' CSVãƒ–ãƒƒã‚¯ã‚’é–‰ã˜ã‚‹
+    ' CSVƒuƒbƒN‚ğ•Â‚¶‚é
     wbCSV.Close SaveChanges:=False
 
     If patCount = 0 Then
-        MsgBox "ãƒ‡ãƒ¼ã‚¿ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã§ã—ãŸã€‚", vbExclamation
+        MsgBox "ƒf[ƒ^‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñ‚Å‚µ‚½B", vbExclamation
         GoTo Cleanup
     End If
 
-    ' ---- ãƒ¬ãƒãƒ¼ãƒˆã‚·ãƒ¼ãƒˆç”Ÿæˆ ----
+    ' ---- ƒŒƒ|[ƒgƒV[ƒg¶¬ ----
     Dim wb As Workbook
     Set wb = ThisWorkbook
 
-    ' æ—¥ä»˜ã¤ãã‚·ãƒ¼ãƒˆåï¼ˆä¾‹: ãƒ¬ãƒãƒ¼ãƒˆ_20260602ï¼‰
+    ' “ú•t‚Â‚«ƒV[ƒg–¼i—á: ƒŒƒ|[ƒg_20260602j
     Dim sheetName As String
-    sheetName = "ãƒ¬ãƒãƒ¼ãƒˆ_" & Format(Now, "yyyymmdd")
+    sheetName = "ƒŒƒ|[ƒg_" & Format(Now, "yyyymmdd")
 
     Application.DisplayAlerts = False
     On Error Resume Next
@@ -186,29 +186,29 @@ NextRow:
     Set wsRep = wb.Sheets.Add(After:=wb.Sheets(wb.Sheets.Count))
     wsRep.Name = sheetName
 
-    ' ---- ãƒ¬ãƒãƒ¼ãƒˆæ§‹ç¯‰ ----
+    ' ---- ƒŒƒ|[ƒg\’z ----
     Call BuildReport(wsRep, patients, patCount, csvPath)
 
     wsRep.Activate
     wsRep.Cells(1, 1).Select
 
-    ' ---- åˆ¥åä¿å­˜ã®æ¡ˆå†… ----
+    ' ---- •Ê–¼•Û‘¶‚ÌˆÄ“à ----
     Dim saveName As String
     saveName = Left(csvPath, InStrRev(csvPath, "\")) & _
-               "å…¥é™¢æœŸé–“ãƒ¬ãƒãƒ¼ãƒˆ_" & Format(Now, "yyyymmdd") & ".xlsm"
+               "“ü‰@ŠúŠÔƒŒƒ|[ƒg_" & Format(Now, "yyyymmdd") & ".xlsm"
 
     Dim ans As VbMsgBoxResult
-    ans = MsgBox("ãƒ¬ãƒãƒ¼ãƒˆã‚’ä½œæˆã—ã¾ã—ãŸï¼" & vbCrLf & vbCrLf & _
-                 "ã€ã‚·ãƒ¼ãƒˆåã€‘" & sheetName & vbCrLf & vbCrLf & _
-                 "åˆ¥åã§ä¿å­˜ã—ã¾ã™ã‹ï¼Ÿ" & vbCrLf & _
-                 "(ã¯ã„ â†’ åŒã˜ãƒ•ã‚©ãƒ«ãƒ€ã«è‡ªå‹•ä¿å­˜)", _
-                 vbQuestion + vbYesNo, "å®Œäº†")
+    ans = MsgBox("ƒŒƒ|[ƒg‚ğì¬‚µ‚Ü‚µ‚½I" & vbCrLf & vbCrLf & _
+                 "yƒV[ƒg–¼z" & sheetName & vbCrLf & vbCrLf & _
+                 "•Ê–¼‚Å•Û‘¶‚µ‚Ü‚·‚©H" & vbCrLf & _
+                 "(‚Í‚¢ ¨ “¯‚¶ƒtƒHƒ‹ƒ_‚É©“®•Û‘¶)", _
+                 vbQuestion + vbYesNo, "Š®—¹")
 
     If ans = vbYes Then
         Application.DisplayAlerts = False
         wb.SaveAs Filename:=saveName, FileFormat:=xlOpenXMLWorkbookMacroEnabled
         Application.DisplayAlerts = True
-        MsgBox "ä¿å­˜ã—ã¾ã—ãŸï¼š" & vbCrLf & saveName, vbInformation
+        MsgBox "•Û‘¶‚µ‚Ü‚µ‚½F" & vbCrLf & saveName, vbInformation
     End If
 
 Cleanup:
@@ -221,40 +221,40 @@ ErrHandler:
     Application.ScreenUpdating = True
     Application.Calculation = xlCalculationAutomatic
     Application.EnableEvents = True
-    MsgBox "ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ã¾ã—ãŸã€‚" & vbCrLf & _
-           "ã‚¨ãƒ©ãƒ¼ç•ªå·: " & Err.Number & vbCrLf & _
-           "å†…å®¹: " & Err.Description, vbCritical, "ã‚¨ãƒ©ãƒ¼"
+    MsgBox "ƒGƒ‰[‚ª”­¶‚µ‚Ü‚µ‚½B" & vbCrLf & _
+           "ƒGƒ‰[”Ô†: " & Err.Number & vbCrLf & _
+           "“à—e: " & Err.Description, vbCritical, "ƒGƒ‰["
 End Sub
 
 ' =============================================================
-' ãƒ¬ãƒãƒ¼ãƒˆæœ¬ä½“ã®æ§‹ç¯‰
+' ƒŒƒ|[ƒg–{‘Ì‚Ì\’z
 ' =============================================================
 Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
                         patCount As Long, csvPath As String)
     Dim curRow As Long
     curRow = 1
 
-    ' åˆ—ãƒ˜ãƒƒãƒ€ãƒ¼å®šç¾©
+    ' —ñƒwƒbƒ_[’è‹`
     Dim hdrs(1 To R_MAX_COL) As String
-    hdrs(R_BYOTO)  = "ç—…æ£Ÿ"
-    hdrs(R_NAME)   = "æ‚£è€…æ°å"
-    hdrs(R_PATNO)  = "æ‚£è€…ã‚³ãƒ¼ãƒ‰"
-    hdrs(R_NYUIN)  = "å…¥é™¢æ—¥"
-    hdrs(R_PERIOD) = "å…¥é™¢æœŸé–“åŒºåˆ†"
-    hdrs(R_REMAIN) = "æ®‹ã‚Šæ—¥æ•°"
-    hdrs(R_AU)     = "æ‰‹è¡“ç­‰äºˆå®šâ‘ "
-    hdrs(R_AV)     = "æ‰‹è¡“ç­‰äºˆå®šâ‘¡"
-    hdrs(R_AW)     = "DPCæœŸé–“â‘ "
-    hdrs(R_AX)     = "DPCæœŸé–“â‘¡"
-    hdrs(R_AY)     = "DPCæœŸé–“â‘¢"
+    hdrs(R_BYOTO)  = "•a“"
+    hdrs(R_NAME)   = "Š³Ò–¼"
+    hdrs(R_PATNO)  = "Š³ÒƒR[ƒh"
+    hdrs(R_NYUIN)  = "“ü‰@“ú"
+    hdrs(R_PERIOD) = "“ü‰@ŠúŠÔ‹æ•ª"
+    hdrs(R_REMAIN) = "c‚è“ú”"
+    hdrs(R_AU)     = "èp“™—\’è‡@"
+    hdrs(R_AV)     = "èp“™—\’è‡A"
+    hdrs(R_AW)     = "DPCŠúŠÔ‡@"
+    hdrs(R_AX)     = "DPCŠúŠÔ‡A"
+    hdrs(R_AY)     = "DPCŠúŠÔ‡B"
 
     ' --------------------------------------------------
-    ' ã‚¿ã‚¤ãƒˆãƒ«è¡Œ
+    ' ƒ^ƒCƒgƒ‹s
     ' --------------------------------------------------
     With ws.Range(ws.Cells(curRow, 1), ws.Cells(curRow, R_MAX_COL))
         .Merge
-        .Value = "å…¥é™¢æ‚£è€… æœŸé–“ç®¡ç†ãƒ¬ãƒãƒ¼ãƒˆã€€ã€€" & _
-                 Format(Now, "yyyyå¹´mmæœˆddæ—¥") & "ã€€å–è¾¼å…ƒ: " & Mid(csvPath, InStrRev(csvPath, "\") + 1)
+        .Value = "“ü‰@Š³Ò ŠúŠÔŠÇ—ƒŒƒ|[ƒg@@" & _
+                 Format(Now, "yyyy”NmmŒdd“ú") & "@æŒ³: " & Mid(csvPath, InStrRev(csvPath, "\") + 1)
         .Font.Bold = True
         .Font.Size = 13
         .Font.Color = RGB(255, 255, 255)
@@ -264,12 +264,12 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
     End With
     curRow = curRow + 1
 
-    ' å‡¡ä¾‹è¡Œ
+    ' –}—ás
     curRow = WriteLegend(ws, curRow)
     curRow = curRow + 1
 
     ' --------------------------------------------------
-    ' SECTION 1: å…¥é™¢æœŸé–“â‘¢ æ®‹ã‚Šæ—¥æ•°ã‚¢ãƒ©ãƒ¼ãƒˆï¼ˆæ˜‡é †ï¼‰
+    ' SECTION 1: “ü‰@ŠúŠÔ‡B c‚è“ú”ƒAƒ‰[ƒgi¸‡j
     ' --------------------------------------------------
     Dim alertIdx() As Long
     Dim alertCnt As Long
@@ -284,7 +284,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
         End If
     Next j
 
-    ' æ®‹ã‚Šæ—¥æ•°ã§æ˜‡é †ã‚½ãƒ¼ãƒˆ
+    ' c‚è“ú”‚Å¸‡ƒ\[ƒg
     Dim a As Long, b As Long, tmp As Long
     For a = 1 To alertCnt - 1
         For b = a + 1 To alertCnt
@@ -298,7 +298,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
 
     If alertCnt > 0 Then
         curRow = WriteSectionBanner(ws, curRow, _
-            "â˜… å„ªå…ˆç¢ºèª  |  å…¥é™¢æœŸé–“â‘¢ æ®‹ã‚Šæ—¥æ•°å°‘ãªã„é †  (" & alertCnt & " å)", _
+            "š —DæŠm”F  |  “ü‰@ŠúŠÔ‡B c‚è“ú”­‚È‚¢‡  (" & alertCnt & " –¼)", _
             RGB(180, 0, 0), RGB(255, 255, 255))
         curRow = WriteHeader(ws, curRow, hdrs)
         For a = 1 To alertCnt
@@ -308,7 +308,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
     End If
 
     ' --------------------------------------------------
-    ' SECTION 2: æœŸé–“è¶…ãˆå‡ºæ¥é«˜
+    ' SECTION 2: ŠúŠÔ’´‚¦o—ˆ‚
     ' --------------------------------------------------
     Dim overIdx() As Long
     Dim overCnt As Long
@@ -316,7 +316,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
     ReDim overIdx(1 To patCount)
 
     For j = 1 To patCount
-        If InStr(patients(j).period, "æœŸé–“è¶…ãˆå‡ºæ¥é«˜") > 0 Then
+        If InStr(patients(j).period, "ŠúŠÔ’´‚¦o—ˆ‚") > 0 Then
             overCnt = overCnt + 1
             overIdx(overCnt) = j
         End If
@@ -324,7 +324,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
 
     If overCnt > 0 Then
         curRow = WriteSectionBanner(ws, curRow, _
-            "âœ• è¦å¯¾å¿œ  |  æœŸé–“è¶…ãˆå‡ºæ¥é«˜  (" & overCnt & " å)", _
+            "? —v‘Î‰  |  ŠúŠÔ’´‚¦o—ˆ‚  (" & overCnt & " –¼)", _
             RGB(64, 64, 64), RGB(255, 255, 255))
         curRow = WriteHeader(ws, curRow, hdrs)
         For a = 1 To overCnt
@@ -334,10 +334,10 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
     End If
 
     ' --------------------------------------------------
-    ' SECTION 3: å…¨æ‚£è€…ãƒ‡ãƒ¼ã‚¿ä¸€è¦§
+    ' SECTION 3: ‘SŠ³Òƒf[ƒ^ˆê——
     ' --------------------------------------------------
     curRow = WriteSectionBanner(ws, curRow, _
-        "ä¸€è¦§  |  å…¨æ‚£è€…ãƒ‡ãƒ¼ã‚¿  (" & patCount & " å)", _
+        "ˆê——  |  ‘SŠ³Òƒf[ƒ^  (" & patCount & " –¼)", _
         RGB(0, 70, 127), RGB(255, 255, 255))
     curRow = WriteHeader(ws, curRow, hdrs)
     For j = 1 To patCount
@@ -345,7 +345,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
     Next j
 
     ' --------------------------------------------------
-    ' æ›¸å¼ä»•ä¸Šã’
+    ' ‘®dã‚°
     ' --------------------------------------------------
     ws.Columns("A:K").AutoFit
     ws.Columns(R_NAME).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_NAME).ColumnWidth, 12)
@@ -362,7 +362,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
 End Sub
 
 ' =============================================================
-' ã‚»ã‚¯ã‚·ãƒ§ãƒ³ãƒãƒŠãƒ¼è¡Œ
+' ƒZƒNƒVƒ‡ƒ“ƒoƒi[s
 ' =============================================================
 Private Function WriteSectionBanner(ws As Worksheet, startRow As Long, _
                                     title As String, bgColor As Long, fgColor As Long) As Long
@@ -380,7 +380,7 @@ Private Function WriteSectionBanner(ws As Worksheet, startRow As Long, _
 End Function
 
 ' =============================================================
-' ãƒ˜ãƒƒãƒ€ãƒ¼è¡Œ
+' ƒwƒbƒ_[s
 ' =============================================================
 Private Function WriteHeader(ws As Worksheet, startRow As Long, hdrs() As String) As Long
     Dim c As Integer
@@ -404,7 +404,7 @@ Private Function WriteHeader(ws As Worksheet, startRow As Long, hdrs() As String
 End Function
 
 ' =============================================================
-' ãƒ‡ãƒ¼ã‚¿è¡Œã®æ›¸ãè¾¼ã¿ï¼†è‰²ä»˜ã‘
+' ƒf[ƒ^s‚Ì‘‚«‚İ•F•t‚¯
 ' =============================================================
 Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientData) As Long
     ws.Cells(startRow, R_BYOTO).Value  = p.byoto
@@ -420,7 +420,7 @@ Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientDat
 
     If p.remainDays >= 0 Then
         ws.Cells(startRow, R_REMAIN).Value = p.remainDays
-        ws.Cells(startRow, R_REMAIN).NumberFormat = "0""æ—¥"""
+        ws.Cells(startRow, R_REMAIN).NumberFormat = "0""“ú"""
         ws.Cells(startRow, R_REMAIN).HorizontalAlignment = xlCenter
     End If
 
@@ -482,29 +482,29 @@ Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientDat
 End Function
 
 ' =============================================================
-' å‡¡ä¾‹è¡Œ
+' –}—ás
 ' =============================================================
 Private Function WriteLegend(ws As Worksheet, startRow As Long) As Long
-    ws.Cells(startRow, 1).Value = "â–  å‡¡ä¾‹ï¼š"
+    ws.Cells(startRow, 1).Value = "¡ –}—áF"
     ws.Cells(startRow, 1).Font.Bold = True
 
     Dim legends(1 To 6, 1 To 3) As Variant  ' label, bgColor, fgColor
-    legends(1, 1) = "  å…¥é™¢æœŸé–“â‘¢ æ®‹ã‚Š7æ—¥ä»¥å†…ï¼ˆè¦å³å¯¾å¿œï¼‰  "
+    legends(1, 1) = "  “ü‰@ŠúŠÔ‡B c‚è7“úˆÈ“ài—v‘¦‘Î‰j  "
     legends(1, 2) = RGB(255, 199, 206) : legends(1, 3) = RGB(192, 0, 0)
 
-    legends(2, 1) = "  å…¥é™¢æœŸé–“â‘¢ æ®‹ã‚Š14æ—¥ä»¥å†…ï¼ˆæ³¨æ„ï¼‰  "
+    legends(2, 1) = "  “ü‰@ŠúŠÔ‡B c‚è14“úˆÈ“ài’ˆÓj  "
     legends(2, 2) = RGB(255, 242, 204) : legends(2, 3) = RGB(156, 101, 0)
 
-    legends(3, 1) = "  å…¥é™¢æœŸé–“â‘¢ ä½™è£•ã‚ã‚Š  "
+    legends(3, 1) = "  “ü‰@ŠúŠÔ‡B —]—T‚ ‚è  "
     legends(3, 2) = RGB(226, 239, 218) : legends(3, 3) = RGB(55, 126, 34)
 
-    legends(4, 1) = "  å…¥é™¢æœŸé–“â‘¡  "
+    legends(4, 1) = "  “ü‰@ŠúŠÔ‡A  "
     legends(4, 2) = RGB(221, 235, 247) : legends(4, 3) = RGB(31, 73, 125)
 
-    legends(5, 1) = "  å…¥é™¢æœŸé–“â‘   "
+    legends(5, 1) = "  “ü‰@ŠúŠÔ‡@  "
     legends(5, 2) = RGB(248, 248, 255) : legends(5, 3) = RGB(0, 0, 0)
 
-    legends(6, 1) = "  æœŸé–“è¶…ãˆå‡ºæ¥é«˜ï¼ˆè¦å¯¾å¿œï¼‰  "
+    legends(6, 1) = "  ŠúŠÔ’´‚¦o—ˆ‚i—v‘Î‰j  "
     legends(6, 2) = RGB(217, 217, 217) : legends(6, 3) = RGB(192, 0, 0)
 
     Dim k As Integer
@@ -524,7 +524,7 @@ Private Function WriteLegend(ws As Worksheet, startRow As Long) As Long
 End Function
 
 ' =============================================================
-' ãƒ˜ãƒ«ãƒ‘ãƒ¼ï¼šå‰å›ãƒ•ã‚©ãƒ«ãƒ€ã®è¨˜æ†¶ãƒ»èª­ã¿å‡ºã—
+' ƒwƒ‹ƒp[F‘O‰ñƒtƒHƒ‹ƒ_‚Ì‹L‰¯E“Ç‚İo‚µ
 ' =============================================================
 Private Function GetLastFolder() As String
     On Error Resume Next
@@ -543,18 +543,18 @@ Private Sub SaveLastFolder(folderPath As String)
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets(SETTING_SHEET)
     If ws Is Nothing Then
-        ' è¨­å®šã‚·ãƒ¼ãƒˆã‚’ä½œæˆï¼ˆéè¡¨ç¤ºï¼‰
+        ' İ’èƒV[ƒg‚ğì¬i”ñ•\¦j
         Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
         ws.Name = SETTING_SHEET
         ws.Visible = xlSheetVeryHidden
-        ws.Cells(SETTING_LASTFOLDER_ROW, 1).Value = "æœ€çµ‚ä½¿ç”¨ãƒ•ã‚©ãƒ«ãƒ€"
+        ws.Cells(SETTING_LASTFOLDER_ROW, 1).Value = "ÅIg—pƒtƒHƒ‹ƒ_"
     End If
     ws.Cells(SETTING_LASTFOLDER_ROW, SETTING_LASTFOLDER_COL).Value = folderPath
     On Error GoTo 0
 End Sub
 
 ' =============================================================
-' ãƒ˜ãƒ«ãƒ‘ãƒ¼é–¢æ•°ç¾¤
+' ƒwƒ‹ƒp[ŠÖ”ŒQ
 ' =============================================================
 
 Private Function SafeStr(cell As Range) As String
@@ -563,12 +563,12 @@ Private Function SafeStr(cell As Range) As String
     On Error GoTo 0
 End Function
 
-' ã€Œ(æ®‹ã‚Š**æ—¥)ã€ã‹ã‚‰æ—¥æ•°ã‚’æ•°å€¤ã§æŠ½å‡ºï¼ˆ-1=è¦‹ã¤ã‹ã‚‰ãªã„ï¼‰
+' u(c‚è**“ú)v‚©‚ç“ú”‚ğ”’l‚Å’Šoi-1=Œ©‚Â‚©‚ç‚È‚¢j
 Private Function ExtractRemainingDays(cellVal As String) As Long
     Dim pos1 As Long, pos2 As Long
-    pos1 = InStr(cellVal, "æ®‹ã‚Š")
+    pos1 = InStr(cellVal, "c‚è")
     If pos1 = 0 Then ExtractRemainingDays = -1 : Exit Function
-    pos2 = InStr(pos1, cellVal, "æ—¥")
+    pos2 = InStr(pos1, cellVal, "“ú")
     If pos2 = 0 Then ExtractRemainingDays = -1 : Exit Function
     Dim numStr As String
     numStr = Mid(cellVal, pos1 + 2, pos2 - pos1 - 2)
@@ -579,15 +579,15 @@ Private Function ExtractRemainingDays(cellVal As String) As Long
     End If
 End Function
 
-' å…¥é™¢æœŸé–“â‘¢ ã‹ã©ã†ã‹åˆ¤å®š
+' “ü‰@ŠúŠÔ‡B ‚©‚Ç‚¤‚©”»’è
 Private Function IsInPeriod3(periodStr As String) As Boolean
-    IsInPeriod3 = (InStr(periodStr, "å…¥é™¢æœŸé–“â‘¢") > 0 Or _
-                   InStr(periodStr, "å…¥é™¢æœŸé–“?") > 0)
+    IsInPeriod3 = (InStr(periodStr, "“ü‰@ŠúŠÔ‡B") > 0 Or _
+                   InStr(periodStr, "“ü‰@ŠúŠÔ?") > 0)
 End Function
 
-' è¡Œã‚¿ã‚¤ãƒ—æ–‡å­—åˆ—ã‚’è¿”ã™
+' sƒ^ƒCƒv•¶š—ñ‚ğ•Ô‚·
 Private Function GetRowType(p As PatientData) As String
-    If InStr(p.period, "æœŸé–“è¶…ãˆå‡ºæ¥é«˜") > 0 Then
+    If InStr(p.period, "ŠúŠÔ’´‚¦o—ˆ‚") > 0 Then
         GetRowType = "OVER"
     ElseIf IsInPeriod3(p.period) Then
         If p.remainDays >= 0 And p.remainDays <= THRESHOLD_CRITICAL Then
@@ -597,9 +597,9 @@ Private Function GetRowType(p As PatientData) As String
         Else
             GetRowType = "SAFE3"
         End If
-    ElseIf InStr(p.period, "å…¥é™¢æœŸé–“â‘¡") > 0 Then
+    ElseIf InStr(p.period, "“ü‰@ŠúŠÔ‡A") > 0 Then
         GetRowType = "PERIOD2"
-    ElseIf InStr(p.period, "å…¥é™¢æœŸé–“â‘ ") > 0 Then
+    ElseIf InStr(p.period, "“ü‰@ŠúŠÔ‡@") > 0 Then
         GetRowType = "PERIOD1"
     Else
         GetRowType = "OTHER"
