@@ -22,6 +22,7 @@ Option Explicit
 
 ' --- 元CSVの列番号（Excelで開いたとき、1始まり） ---
 Private Const CSV_B  As Integer = 2   ' 部屋（病棟）
+Private Const CSV_D  As Integer = 4   ' 科（診療科）
 Private Const CSV_G  As Integer = 7   ' 患者コード
 Private Const CSV_H  As Integer = 8   ' 患者氏名
 Private Const CSV_J  As Integer = 10  ' 性別
@@ -41,21 +42,22 @@ Private Const THRESHOLD_WARNING  As Integer = 14  ' 黄：残り14日以内
 
 ' --- レポート出力列（1始まり） ---
 Private Const R_BYOTO   As Integer = 1  ' 部屋（病棟）
-Private Const R_NAME    As Integer = 2  ' 患者氏名
-Private Const R_PATNO   As Integer = 3  ' 患者コード
-Private Const R_SEX     As Integer = 4  ' 性別
-Private Const R_AGE     As Integer = 5  ' 年齢
-Private Const R_NYUIN   As Integer = 6  ' 入院日
-Private Const R_TAIIN   As Integer = 7  ' 退院日
-Private Const R_PERIOD  As Integer = 8  ' DPC入院期間区分
-Private Const R_REMAIN  As Integer = 9  ' 残り日数（数値）
-Private Const R_AU      As Integer = 10 ' 診断群分類
-Private Const R_AV      As Integer = 11 ' DPC決定病名
-Private Const R_AW      As Integer = 12 ' DPC入院期間1
-Private Const R_AX      As Integer = 13 ' DPC入院期間2
-Private Const R_AY      As Integer = 14 ' 包括終了日
+Private Const R_DEPT    As Integer = 2  ' 診療科
+Private Const R_NAME    As Integer = 3  ' 患者氏名
+Private Const R_PATNO   As Integer = 4  ' 患者コード
+Private Const R_SEX     As Integer = 5  ' 性別
+Private Const R_AGE     As Integer = 6  ' 年齢
+Private Const R_NYUIN   As Integer = 7  ' 入院日
+Private Const R_TAIIN   As Integer = 8  ' 退院日
+Private Const R_PERIOD  As Integer = 9  ' DPC入院期間区分
+Private Const R_REMAIN  As Integer = 10 ' 残り日数（数値）
+Private Const R_AU      As Integer = 11 ' 診断群分類
+Private Const R_AV      As Integer = 12 ' DPC決定病名
+Private Const R_AW      As Integer = 13 ' DPC入院期間1
+Private Const R_AX      As Integer = 14 ' DPC入院期間2
+Private Const R_AY      As Integer = 15 ' 包括終了日
 
-Private Const R_MAX_COL As Integer = 14 ' 最終出力列数
+Private Const R_MAX_COL As Integer = 15 ' 最終出力列数
 
 ' 前回使用フォルダを記憶するセル位置（設定シート）
 Private Const SETTING_SHEET As String = "設定"
@@ -65,6 +67,7 @@ Private Const SETTING_LASTFOLDER_COL As Long = 2
 ' --- 患者データ型 ---
 Private Type PatientData
     byoto         As String  ' 部屋（病棟）
+    dept          As String  ' 診療科
     name          As String  ' 患者氏名
     patNo         As String  ' 患者コード
     sex           As String  ' 性別
@@ -137,6 +140,7 @@ Public Sub CreatePatientReport()
 
         Dim p As PatientData
         p.byoto         = SafeStr(wsCSV.Cells(i, CSV_B))
+        p.dept          = SafeStr(wsCSV.Cells(i, CSV_D))
         p.name          = SafeStr(wsCSV.Cells(i, CSV_H))
         p.patNo         = SafeStr(wsCSV.Cells(i, CSV_G))
         p.sex           = SafeStr(wsCSV.Cells(i, CSV_J))
@@ -244,6 +248,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
 
     Dim hdrs(1 To R_MAX_COL) As String
     hdrs(R_BYOTO)  = "病室"
+    hdrs(R_DEPT)   = "診療科"
     hdrs(R_NAME)   = "患者氏名"
     hdrs(R_PATNO)  = "患者コード"
     hdrs(R_SEX)    = "性別"
@@ -378,7 +383,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
     Next j
 
     ' 書式仕上げ
-    ws.Columns("A:N").AutoFit
+    ws.Columns("A:O").AutoFit
     ws.Columns(R_NAME).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_NAME).ColumnWidth, 12)
     ws.Columns(R_PERIOD).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_PERIOD).ColumnWidth, 16)
     ws.Columns(R_AV).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_AV).ColumnWidth, 20)
@@ -432,6 +437,7 @@ End Function
 ' =============================================================
 Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientData) As Long
     ws.Cells(startRow, R_BYOTO).Value  = p.byoto
+    ws.Cells(startRow, R_DEPT).Value   = p.dept
     ws.Cells(startRow, R_NAME).Value   = p.name
     ws.Cells(startRow, R_PATNO).Value  = p.patNo
     ws.Cells(startRow, R_SEX).Value    = p.sex
@@ -656,3 +662,9 @@ Private Sub SaveLastFolder(folderPath As String)
     ws.Cells(SETTING_LASTFOLDER_ROW, SETTING_LASTFOLDER_COL).Value = folderPath
     On Error GoTo 0
 End Sub
+
+Private Function IsNumeric(str As String) As Boolean
+    On Error Resume Next
+    IsNumeric = Not IsError(CDbl(str))
+    On Error GoTo 0
+End Function
