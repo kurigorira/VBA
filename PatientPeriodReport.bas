@@ -334,16 +334,16 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
         Next b
     Next a
 
+    curRow = WriteSectionBanner(ws, curRow, _
+        "Åö óDêÊämîF  |  ì¸â@ä˙ä‘áB écÇËì˙êîè≠Ç»Ç¢èá  (" & alertCnt & " ñº)", _
+        RGB(180, 0, 0), RGB(255, 255, 255))
     If alertCnt > 0 Then
-        curRow = WriteSectionBanner(ws, curRow, _
-            "Åö óDêÊämîF  |  ì¸â@ä˙ä‘áB écÇËì˙êîè≠Ç»Ç¢èá  (" & alertCnt & " ñº)", _
-            RGB(180, 0, 0), RGB(255, 255, 255))
         curRow = WriteHeader(ws, curRow, hdrs)
         For a = 1 To alertCnt
             curRow = WriteDataRow(ws, curRow, patients(alertIdx(a)))
         Next a
-        curRow = curRow + 1
     End If
+    curRow = curRow + 1
 
     ' --------------------------------------------------
     ' SECTION 2: ä˙ä‘í¥Ç¶èoóàçÇ
@@ -612,8 +612,18 @@ End Function
 
 ' ì¸â@ä˙ä‘áB Ç©Ç«Ç§Ç©îªíË
 Private Function IsInPeriod3(periodStr As String) As Boolean
-    IsInPeriod3 = (InStr(periodStr, "ì¸â@ä˙ä‘?") > 0 Or _
-                   InStr(periodStr, "3") > 0 And InStr(periodStr, "ì¸â@ä˙ä‘") > 0)
+    ' Chr(9314)=áB Chr(9312)=á@ Chr(9313)=áA
+    If InStr(periodStr, Chr(9314)) > 0 Then
+        IsInPeriod3 = True : Exit Function
+    End If
+    If InStr(periodStr, "ì¸â@ä˙ä‘") > 0 Then
+        If InStr(periodStr, Chr(9312)) = 0 And _
+           InStr(periodStr, Chr(9313)) = 0 And _
+           InStr(periodStr, "í¥Ç¶") = 0 Then
+            IsInPeriod3 = True : Exit Function
+        End If
+    End If
+    IsInPeriod3 = False
 End Function
 
 ' çsÉ^ÉCÉvï∂éöóÒÇï‘Ç∑
