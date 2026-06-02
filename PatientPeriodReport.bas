@@ -5,6 +5,16 @@ Option Explicit
 '  入院患者 期間管理レポート作成マクロ
 '  対象CSV列: B=病棟, D=患者氏名, G=患者コード, O=入院日,
 '             AP=入院期間区分, AU-AY=DPC関連期間情報
+'
+'  【使い方】
+'   1. このマクロが入った .xlsm を開く
+'   2. Alt+F8 → CreatePatientReport を実行（またはボタンをクリック）
+'   3. CSVファイルを選択するだけで「レポート」シートが生成される
+'   4. 内容確認後、ファイル→名前を付けて保存 で日付別に保存する
+'
+'  【ボタン設置方法】
+'   開発タブ→挿入→フォームコントロール→ボタン を配置し
+'   CreatePatientReport を割り当てる
 ' ============================================================
 
 ' --- 元CSVの列番号（Excel上で開いたとき、1始まり） ---
@@ -38,6 +48,11 @@ Private Const R_AY      As Integer = 11 ' AY列
 
 Private Const R_MAX_COL As Integer = 11 ' 最終出力列数
 
+' 前回使用フォルダを記憶するセル位置（設定シート）
+Private Const SETTING_SHEET As String = "設定"
+Private Const SETTING_LASTFOLDER_ROW As Long = 1
+Private Const SETTING_LASTFOLDER_COL As Long = 2
+
 ' --- 患者データ型 ---
 Private Type PatientData
     byoto     As String  ' 病棟
@@ -54,11 +69,15 @@ Private Type PatientData
 End Type
 
 ' =============================================================
-' メインエントリポイント
+' メインエントリポイント（ボタンまたはマクロ実行で呼ぶ）
 ' =============================================================
 Public Sub CreatePatientReport()
     Dim fd As FileDialog
     Dim csvPath As String
+    Dim initFolder As String
+
+    ' 前回フォルダを取得
+    initFolder = GetLastFolder()
 
     ' ---- CSVファイル選択 ----
     Set fd = Application.FileDialog(msoFileDialogFilePicker)
@@ -67,6 +86,7 @@ Public Sub CreatePatientReport()
         .Filters.Clear
         .Filters.Add "CSVファイル", "*.csv"
         .AllowMultiSelect = False
+        If initFolder <> "" Then .InitialFileName = initFolder & "\"
         If .Show <> -1 Then
             MsgBox "ファイルが選択されませんでした。処理を中断します。", vbExclamation
             Exit Sub
@@ -74,17 +94,18 @@ Public Sub CreatePatientReport()
         csvPath = .SelectedItems(1)
     End With
 
+    ' フォルダを記憶
+    SaveLastFolder Left(csvPath, InStrRev(csvPath, "\") - 1)
+
     Application.ScreenUpdating = False
     Application.Calculation = xlCalculationManual
     Application.EnableEvents = False
 
     On Error GoTo ErrHandler
 
-    ' ---- CSVをワークブックとして開く ----
+    ' ---- CSVをワークブックとして開く（Shift-JIS対応） ----
     Dim wbCSV As Workbook
     Dim wsCSV As Worksheet
-
-    ' OriginにShift-JIS（932）を指定して開く
     Set wbCSV = Workbooks.Open( _
         Filename:=csvPath, _
         Format:=6, _
@@ -97,13 +118,12 @@ Public Sub CreatePatientReport()
     lastRow = wsCSV.Cells(wsCSV.Rows.Count, 1).End(xlUp).Row
 
     Dim patients() As PatientData
-    ReDim patients(1 To lastRow - 1)  ' ヘッダー除く
+    ReDim patients(1 To lastRow - 1)
     Dim patCount As Long
     patCount = 0
 
     Dim i As Long
     For i = 2 To lastRow
-        ' 空行スキップ（A列が空）
         If Trim(CStr(wsCSV.Cells(i, 1).Value)) = "" Then GoTo NextRow
 
         Dim p As PatientData
@@ -140,7 +160,7 @@ Public Sub CreatePatientReport()
 NextRow:
     Next i
 
-    ' CSV ブックを保存せずに閉じる
+    ' CSVブックを閉じる
     wbCSV.Close SaveChanges:=False
 
     If patCount = 0 Then
@@ -152,24 +172,44 @@ NextRow:
     Dim wb As Workbook
     Set wb = ThisWorkbook
 
+    ' 日付つきシート名（例: レポート_20260602）
+    Dim sheetName As String
+    sheetName = "レポート_" & Format(Now, "yyyymmdd")
+
     Application.DisplayAlerts = False
     On Error Resume Next
-    wb.Sheets("患者入院期間レポート").Delete
+    wb.Sheets(sheetName).Delete
     On Error GoTo ErrHandler
     Application.DisplayAlerts = True
 
     Dim wsRep As Worksheet
     Set wsRep = wb.Sheets.Add(After:=wb.Sheets(wb.Sheets.Count))
-    wsRep.Name = "患者入院期間レポート"
+    wsRep.Name = sheetName
 
     ' ---- レポート構築 ----
-    Call BuildReport(wsRep, patients, patCount)
+    Call BuildReport(wsRep, patients, patCount, csvPath)
 
     wsRep.Activate
     wsRep.Cells(1, 1).Select
 
-    MsgBox "レポートを作成しました！" & vbCrLf & _
-           "シート名：患者入院期間レポート", vbInformation, "完了"
+    ' ---- 別名保存の案内 ----
+    Dim saveName As String
+    saveName = Left(csvPath, InStrRev(csvPath, "\")) & _
+               "入院期間レポート_" & Format(Now, "yyyymmdd") & ".xlsm"
+
+    Dim ans As VbMsgBoxResult
+    ans = MsgBox("レポートを作成しました！" & vbCrLf & vbCrLf & _
+                 "【シート名】" & sheetName & vbCrLf & vbCrLf & _
+                 "別名で保存しますか？" & vbCrLf & _
+                 "(はい → 同じフォルダに自動保存)", _
+                 vbQuestion + vbYesNo, "完了")
+
+    If ans = vbYes Then
+        Application.DisplayAlerts = False
+        wb.SaveAs Filename:=saveName, FileFormat:=xlOpenXMLWorkbookMacroEnabled
+        Application.DisplayAlerts = True
+        MsgBox "保存しました：" & vbCrLf & saveName, vbInformation
+    End If
 
 Cleanup:
     Application.ScreenUpdating = True
@@ -189,7 +229,8 @@ End Sub
 ' =============================================================
 ' レポート本体の構築
 ' =============================================================
-Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As Long)
+Private Sub BuildReport(ws As Worksheet, patients() As PatientData, _
+                        patCount As Long, csvPath As String)
     Dim curRow As Long
     curRow = 1
 
@@ -207,23 +248,19 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As 
     hdrs(R_AX)     = "DPC期間②"
     hdrs(R_AY)     = "DPC期間③"
 
-    ' ==========================================
-    ' レポートタイトル
-    ' ==========================================
+    ' --------------------------------------------------
+    ' タイトル行
+    ' --------------------------------------------------
     With ws.Range(ws.Cells(curRow, 1), ws.Cells(curRow, R_MAX_COL))
         .Merge
-        .Value = "入院患者 期間管理レポート　　作成日：" & Format(Now, "yyyy/mm/dd")
+        .Value = "入院患者 期間管理レポート　　" & _
+                 Format(Now, "yyyy年mm月dd日") & "　取込元: " & Mid(csvPath, InStrRev(csvPath, "\") + 1)
         .Font.Bold = True
-        .Font.Size = 14
+        .Font.Size = 13
         .Font.Color = RGB(255, 255, 255)
         .Interior.Color = RGB(31, 73, 125)
         .HorizontalAlignment = xlLeft
-        .RowHeight = 28
-        With .Borders(xlEdgeBottom)
-            .LineStyle = xlContinuous
-            .Weight = xlThick
-            .Color = RGB(0, 0, 0)
-        End With
+        .RowHeight = 26
     End With
     curRow = curRow + 1
 
@@ -231,10 +268,9 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As 
     curRow = WriteLegend(ws, curRow)
     curRow = curRow + 1
 
-    ' ==========================================
-    ' SECTION 1: 入院期間③ 残り日数アラート上位
-    ' ==========================================
-    ' 対象行インデックスを収集
+    ' --------------------------------------------------
+    ' SECTION 1: 入院期間③ 残り日数アラート（昇順）
+    ' --------------------------------------------------
     Dim alertIdx() As Long
     Dim alertCnt As Long
     alertCnt = 0
@@ -248,7 +284,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As 
         End If
     Next j
 
-    ' 残り日数で昇順ソート（バブルソート）
+    ' 残り日数で昇順ソート
     Dim a As Long, b As Long, tmp As Long
     For a = 1 To alertCnt - 1
         For b = a + 1 To alertCnt
@@ -261,9 +297,8 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As 
     Next a
 
     If alertCnt > 0 Then
-        ' セクションバナー
         curRow = WriteSectionBanner(ws, curRow, _
-            "★ 優先確認  |  入院期間③ 残り日数少ない患者（昇順）　　計 " & alertCnt & " 名", _
+            "★ 優先確認  |  入院期間③ 残り日数少ない順  (" & alertCnt & " 名)", _
             RGB(180, 0, 0), RGB(255, 255, 255))
         curRow = WriteHeader(ws, curRow, hdrs)
         For a = 1 To alertCnt
@@ -272,9 +307,9 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As 
         curRow = curRow + 1
     End If
 
-    ' ==========================================
+    ' --------------------------------------------------
     ' SECTION 2: 期間超え出来高
-    ' ==========================================
+    ' --------------------------------------------------
     Dim overIdx() As Long
     Dim overCnt As Long
     overCnt = 0
@@ -289,7 +324,7 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As 
 
     If overCnt > 0 Then
         curRow = WriteSectionBanner(ws, curRow, _
-            "✕ 要対応  |  期間超え出来高 患者一覧　　計 " & overCnt & " 名", _
+            "✕ 要対応  |  期間超え出来高  (" & overCnt & " 名)", _
             RGB(64, 64, 64), RGB(255, 255, 255))
         curRow = WriteHeader(ws, curRow, hdrs)
         For a = 1 To overCnt
@@ -298,36 +333,36 @@ Private Sub BuildReport(ws As Worksheet, patients() As PatientData, patCount As 
         curRow = curRow + 1
     End If
 
-    ' ==========================================
+    ' --------------------------------------------------
     ' SECTION 3: 全患者データ一覧
-    ' ==========================================
+    ' --------------------------------------------------
     curRow = WriteSectionBanner(ws, curRow, _
-        "一覧  |  全患者データ　　計 " & patCount & " 名", _
+        "一覧  |  全患者データ  (" & patCount & " 名)", _
         RGB(0, 70, 127), RGB(255, 255, 255))
     curRow = WriteHeader(ws, curRow, hdrs)
     For j = 1 To patCount
         curRow = WriteDataRow(ws, curRow, patients(j))
     Next j
 
-    ' ==========================================
+    ' --------------------------------------------------
     ' 書式仕上げ
-    ' ==========================================
+    ' --------------------------------------------------
     ws.Columns("A:K").AutoFit
-    ' 最低列幅調整
-    ws.Columns(R_NAME).ColumnWidth = IIf(ws.Columns(R_NAME).ColumnWidth < 12, 12, ws.Columns(R_NAME).ColumnWidth)
-    ws.Columns(R_PERIOD).ColumnWidth = IIf(ws.Columns(R_PERIOD).ColumnWidth < 16, 16, ws.Columns(R_PERIOD).ColumnWidth)
+    ws.Columns(R_NAME).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_NAME).ColumnWidth, 12)
+    ws.Columns(R_PERIOD).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_PERIOD).ColumnWidth, 16)
+    ws.Columns(R_AW).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_AW).ColumnWidth, 20)
+    ws.Columns(R_AX).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_AX).ColumnWidth, 20)
+    ws.Columns(R_AY).ColumnWidth = WorksheetFunction.Max(ws.Columns(R_AY).ColumnWidth, 20)
 
-    ' 印刷設定
     With ws.PageSetup
         .Orientation = xlLandscape
         .FitToPagesWide = 1
         .FitToPagesTall = False
-        .PrintTitleRows = ""
     End With
 End Sub
 
 ' =============================================================
-' セクションバナー行の書き込み
+' セクションバナー行
 ' =============================================================
 Private Function WriteSectionBanner(ws As Worksheet, startRow As Long, _
                                     title As String, bgColor As Long, fgColor As Long) As Long
@@ -335,17 +370,17 @@ Private Function WriteSectionBanner(ws As Worksheet, startRow As Long, _
         .Merge
         .Value = title
         .Font.Bold = True
-        .Font.Size = 12
+        .Font.Size = 11
         .Font.Color = fgColor
         .Interior.Color = bgColor
         .HorizontalAlignment = xlLeft
-        .RowHeight = 22
+        .RowHeight = 20
     End With
     WriteSectionBanner = startRow + 1
 End Function
 
 ' =============================================================
-' ヘッダー行の書き込み
+' ヘッダー行
 ' =============================================================
 Private Function WriteHeader(ws As Worksheet, startRow As Long, hdrs() As String) As Long
     Dim c As Integer
@@ -372,7 +407,6 @@ End Function
 ' データ行の書き込み＆色付け
 ' =============================================================
 Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientData) As Long
-    ' データ書き込み
     ws.Cells(startRow, R_BYOTO).Value  = p.byoto
     ws.Cells(startRow, R_NAME).Value   = p.name
     ws.Cells(startRow, R_PATNO).Value  = p.patNo
@@ -390,64 +424,44 @@ Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientDat
         ws.Cells(startRow, R_REMAIN).HorizontalAlignment = xlCenter
     End If
 
-    ' 行範囲
     Dim rng As Range
     Set rng = ws.Range(ws.Cells(startRow, 1), ws.Cells(startRow, R_MAX_COL))
 
-    ' 行タイプ判定
-    Dim rowType As String
-    rowType = GetRowType(p)
-
-    ' ---- 背景色・フォント色の設定 ----
-    Select Case rowType
+    Select Case GetRowType(p)
 
         Case "CRIT3"
-            ' 入院期間③ 残り7日以内 → 強い赤背景
             rng.Interior.Color = RGB(255, 199, 206)
             With ws.Cells(startRow, R_PERIOD)
-                .Font.Bold = True
-                .Font.Color = RGB(192, 0, 0)
+                .Font.Bold = True : .Font.Color = RGB(192, 0, 0)
             End With
             With ws.Cells(startRow, R_REMAIN)
-                .Font.Bold = True
-                .Font.Size = 11
-                .Font.Color = RGB(192, 0, 0)
-            End With
-            ' 残り日数セルに枠強調
-            With ws.Cells(startRow, R_REMAIN).Borders
-                .LineStyle = xlContinuous
-                .Weight = xlMedium
-                .Color = RGB(192, 0, 0)
+                .Font.Bold = True : .Font.Size = 11 : .Font.Color = RGB(192, 0, 0)
+                .Borders.LineStyle = xlContinuous
+                .Borders.Weight = xlMedium
+                .Borders.Color = RGB(192, 0, 0)
             End With
 
         Case "WARN3"
-            ' 入院期間③ 残り14日以内 → 黄色背景
             rng.Interior.Color = RGB(255, 242, 204)
             With ws.Cells(startRow, R_PERIOD)
-                .Font.Bold = True
-                .Font.Color = RGB(156, 101, 0)
+                .Font.Bold = True : .Font.Color = RGB(156, 101, 0)
             End With
             With ws.Cells(startRow, R_REMAIN)
-                .Font.Bold = True
-                .Font.Color = RGB(156, 101, 0)
+                .Font.Bold = True : .Font.Color = RGB(156, 101, 0)
             End With
 
         Case "SAFE3"
-            ' 入院期間③ 余裕あり → 薄緑
             rng.Interior.Color = RGB(226, 239, 218)
             ws.Cells(startRow, R_PERIOD).Font.Color = RGB(55, 126, 34)
 
         Case "PERIOD2"
-            ' 入院期間② → 薄青
             rng.Interior.Color = RGB(221, 235, 247)
             ws.Cells(startRow, R_PERIOD).Font.Color = RGB(31, 73, 125)
 
         Case "PERIOD1"
-            ' 入院期間① → ほぼ白
             rng.Interior.Color = RGB(248, 248, 255)
 
         Case "OVER"
-            ' 期間超え出来高 → グレー＋打消し線＋赤太字
             rng.Interior.Color = RGB(217, 217, 217)
             rng.Font.Color = RGB(120, 120, 120)
             With ws.Cells(startRow, R_PERIOD)
@@ -457,12 +471,10 @@ Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientDat
             End With
 
         Case Else
-            ' その他
             rng.Interior.Color = RGB(250, 250, 250)
 
     End Select
 
-    ' 下罫線（薄いグレー）
     rng.Borders(xlEdgeBottom).LineStyle = xlContinuous
     rng.Borders(xlEdgeBottom).Color = RGB(210, 210, 210)
 
@@ -470,72 +482,94 @@ Private Function WriteDataRow(ws As Worksheet, startRow As Long, p As PatientDat
 End Function
 
 ' =============================================================
-' 凡例行の書き込み
+' 凡例行
 ' =============================================================
 Private Function WriteLegend(ws As Worksheet, startRow As Long) As Long
-    ' 凡例ラベルと色のペア
-    Dim legends(1 To 6, 1 To 2) As String  ' (1)ラベル (2)色コード
-    legends(1, 1) = "  入院期間③ 残り7日以内（要即対応）  " : legends(1, 2) = "CRIT3"
-    legends(2, 1) = "  入院期間③ 残り14日以内（注意）  "   : legends(2, 2) = "WARN3"
-    legends(3, 1) = "  入院期間③ 余裕あり  "              : legends(3, 2) = "SAFE3"
-    legends(4, 1) = "  入院期間②  "                       : legends(4, 2) = "PERIOD2"
-    legends(5, 1) = "  入院期間①  "                       : legends(5, 2) = "PERIOD1"
-    legends(6, 1) = "  期間超え出来高（要対応）  "          : legends(6, 2) = "OVER"
-
     ws.Cells(startRow, 1).Value = "■ 凡例："
     ws.Cells(startRow, 1).Font.Bold = True
 
-    Dim col As Integer
-    col = 2
+    Dim legends(1 To 6, 1 To 3) As Variant  ' label, bgColor, fgColor
+    legends(1, 1) = "  入院期間③ 残り7日以内（要即対応）  "
+    legends(1, 2) = RGB(255, 199, 206) : legends(1, 3) = RGB(192, 0, 0)
+
+    legends(2, 1) = "  入院期間③ 残り14日以内（注意）  "
+    legends(2, 2) = RGB(255, 242, 204) : legends(2, 3) = RGB(156, 101, 0)
+
+    legends(3, 1) = "  入院期間③ 余裕あり  "
+    legends(3, 2) = RGB(226, 239, 218) : legends(3, 3) = RGB(55, 126, 34)
+
+    legends(4, 1) = "  入院期間②  "
+    legends(4, 2) = RGB(221, 235, 247) : legends(4, 3) = RGB(31, 73, 125)
+
+    legends(5, 1) = "  入院期間①  "
+    legends(5, 2) = RGB(248, 248, 255) : legends(5, 3) = RGB(0, 0, 0)
+
+    legends(6, 1) = "  期間超え出来高（要対応）  "
+    legends(6, 2) = RGB(217, 217, 217) : legends(6, 3) = RGB(192, 0, 0)
+
     Dim k As Integer
     For k = 1 To 6
-        With ws.Cells(startRow, col)
+        With ws.Cells(startRow, k + 1)
             .Value = legends(k, 1)
-            .Font.Bold = (legends(k, 2) = "CRIT3" Or legends(k, 2) = "OVER")
-            Select Case legends(k, 2)
-                Case "CRIT3"  : .Interior.Color = RGB(255, 199, 206) : .Font.Color = RGB(192, 0, 0)
-                Case "WARN3"  : .Interior.Color = RGB(255, 242, 204) : .Font.Color = RGB(156, 101, 0)
-                Case "SAFE3"  : .Interior.Color = RGB(226, 239, 218) : .Font.Color = RGB(55, 126, 34)
-                Case "PERIOD2": .Interior.Color = RGB(221, 235, 247) : .Font.Color = RGB(31, 73, 125)
-                Case "PERIOD1": .Interior.Color = RGB(248, 248, 255)
-                Case "OVER"
-                    .Interior.Color = RGB(217, 217, 217)
-                    .Font.Color = RGB(192, 0, 0)
-                    .Font.Strikethrough = True
-            End Select
+            .Font.Bold = (k = 1 Or k = 6)
+            .Font.Color = legends(k, 3)
+            .Interior.Color = legends(k, 2)
+            If k = 6 Then .Font.Strikethrough = True
             .HorizontalAlignment = xlCenter
             .Borders.LineStyle = xlContinuous
             .Borders.Color = RGB(180, 180, 180)
         End With
-        col = col + 1
     Next k
     WriteLegend = startRow + 1
 End Function
 
 ' =============================================================
+' ヘルパー：前回フォルダの記憶・読み出し
+' =============================================================
+Private Function GetLastFolder() As String
+    On Error Resume Next
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets(SETTING_SHEET)
+    If ws Is Nothing Then
+        GetLastFolder = ""
+    Else
+        GetLastFolder = CStr(ws.Cells(SETTING_LASTFOLDER_ROW, SETTING_LASTFOLDER_COL).Value)
+    End If
+    On Error GoTo 0
+End Function
+
+Private Sub SaveLastFolder(folderPath As String)
+    On Error Resume Next
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Sheets(SETTING_SHEET)
+    If ws Is Nothing Then
+        ' 設定シートを作成（非表示）
+        Set ws = ThisWorkbook.Sheets.Add(After:=ThisWorkbook.Sheets(ThisWorkbook.Sheets.Count))
+        ws.Name = SETTING_SHEET
+        ws.Visible = xlSheetVeryHidden
+        ws.Cells(SETTING_LASTFOLDER_ROW, 1).Value = "最終使用フォルダ"
+    End If
+    ws.Cells(SETTING_LASTFOLDER_ROW, SETTING_LASTFOLDER_COL).Value = folderPath
+    On Error GoTo 0
+End Sub
+
+' =============================================================
 ' ヘルパー関数群
 ' =============================================================
 
-' セル値を安全に文字列化
 Private Function SafeStr(cell As Range) As String
     On Error Resume Next
     SafeStr = Trim(CStr(cell.Value))
     On Error GoTo 0
 End Function
 
-' 「(残り**日)」から日数を数値で抽出（見つからない場合は -1）
+' 「(残り**日)」から日数を数値で抽出（-1=見つからない）
 Private Function ExtractRemainingDays(cellVal As String) As Long
     Dim pos1 As Long, pos2 As Long
     pos1 = InStr(cellVal, "残り")
-    If pos1 = 0 Then
-        ExtractRemainingDays = -1
-        Exit Function
-    End If
+    If pos1 = 0 Then ExtractRemainingDays = -1 : Exit Function
     pos2 = InStr(pos1, cellVal, "日")
-    If pos2 = 0 Then
-        ExtractRemainingDays = -1
-        Exit Function
-    End If
+    If pos2 = 0 Then ExtractRemainingDays = -1 : Exit Function
     Dim numStr As String
     numStr = Mid(cellVal, pos1 + 2, pos2 - pos1 - 2)
     If IsNumeric(numStr) Then
@@ -547,7 +581,8 @@ End Function
 
 ' 入院期間③ かどうか判定
 Private Function IsInPeriod3(periodStr As String) As Boolean
-    IsInPeriod3 = (InStr(periodStr, "入院期間③") > 0 Or InStr(periodStr, "入院期間?") > 0)
+    IsInPeriod3 = (InStr(periodStr, "入院期間③") > 0 Or _
+                   InStr(periodStr, "入院期間?") > 0)
 End Function
 
 ' 行タイプ文字列を返す
