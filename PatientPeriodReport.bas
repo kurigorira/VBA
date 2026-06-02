@@ -588,10 +588,12 @@ Private Function IsTodayDischarge(dischStr As String) As Boolean
         dateStr = Trim(dischStr)
     End If
 
-    ' –{“ú‚Æ”äŠr
+    ' –{“ú‚Æ”äŠriyyyy/m/d ‚Æ yyyy/mm/dd —¼Œ`Ž®‚É‘Î‰žj
     Dim todayStr As String
-    todayStr = Format(Now, "yyyy/m/d")
-    IsTodayDischarge = (dateStr = todayStr)
+    Dim todayStrZ As String
+    todayStr  = Format(Now, "yyyy/m/d")    ' —á: 2026/6/2
+    todayStrZ = Format(Now, "yyyy/mm/dd")  ' —á: 2026/06/02
+    IsTodayDischarge = (dateStr = todayStr Or dateStr = todayStrZ)
 End Function
 
 ' u(Žc‚è**“ú)v‚©‚ç“ú”‚ð”’l‚Å’Šoi-1=Œ©‚Â‚©‚ç‚È‚¢j
@@ -612,13 +614,14 @@ End Function
 
 ' “ü‰@ŠúŠÔ‡B ‚©‚Ç‚¤‚©”»’è
 Private Function IsInPeriod3(periodStr As String) As Boolean
-    ' Chr(9314)=‡B Chr(9312)=‡@ Chr(9313)=‡A
-    If InStr(periodStr, Chr(9314)) > 0 Then
+    ' ChrW(9314)=‡B ChrW(9312)=‡@ ChrW(9313)=‡A  ¦Chr()‚Í255’´‚¦”ñ‘Î‰ž‚Ì‚½‚ßChrW()Žg—p
+    If InStr(periodStr, ChrW(9314)) > 0 Then
         IsInPeriod3 = True : Exit Function
     End If
+    ' ‡B•¶Žš‚ªŽæ‚ê‚È‚­‚Ä‚à“ü‰@ŠúŠÔ‚ª‚ ‚è‡@‡A’´‚¦‚Å‚È‚¯‚ê‚Î‡B‚Æ”»’è
     If InStr(periodStr, "“ü‰@ŠúŠÔ") > 0 Then
-        If InStr(periodStr, Chr(9312)) = 0 And _
-           InStr(periodStr, Chr(9313)) = 0 And _
+        If InStr(periodStr, ChrW(9312)) = 0 And _
+           InStr(periodStr, ChrW(9313)) = 0 And _
            InStr(periodStr, "’´‚¦") = 0 Then
             IsInPeriod3 = True : Exit Function
         End If
@@ -638,9 +641,11 @@ Private Function GetRowType(p As PatientData) As String
         Else
             GetRowType = "SAFE3"
         End If
-    ElseIf InStr(p.period, "“ü‰@ŠúŠÔ") > 0 And InStr(p.period, "2") > 0 Then
+    ElseIf InStr(p.period, ChrW(9313)) > 0 Or _
+           (InStr(p.period, "“ü‰@ŠúŠÔ") > 0 And InStr(p.period, "‡A") > 0) Then
         GetRowType = "PERIOD2"
-    ElseIf InStr(p.period, "“ü‰@ŠúŠÔ") > 0 And InStr(p.period, "1") > 0 Then
+    ElseIf InStr(p.period, ChrW(9312)) > 0 Or _
+           (InStr(p.period, "“ü‰@ŠúŠÔ") > 0 And InStr(p.period, "‡@") > 0) Then
         GetRowType = "PERIOD1"
     Else
         GetRowType = "OTHER"
